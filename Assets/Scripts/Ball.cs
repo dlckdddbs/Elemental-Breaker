@@ -18,7 +18,7 @@ namespace ElementalBreaker
 
         public bool IsFlying { get; private set; }
         public bool IsDescending => IsFlying && body.linearVelocity.y < 0f;
-        public event Action Returned;
+        public event Action<Ball> Returned;
 
         private void Awake()
         {
@@ -98,9 +98,10 @@ namespace ElementalBreaker
             if (!IsFlying)
                 return;
 
-            // 공을 없애지 않고 처음 발사 위치로 돌려놓아.
-            Prepare(launchPosition);
-            Returned?.Invoke();
+            // 떨어진 X 위치를 다음 발사 위치로 써. 발사 높이는 유지해.
+            Vector2 nextLaunchPosition = new Vector2(body.position.x, launchPosition.y);
+            Prepare(nextLaunchPosition);
+            Returned?.Invoke(this);
         }
 
         private void OnDestroy()
