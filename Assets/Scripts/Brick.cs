@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace ElementalBreaker
@@ -7,7 +8,7 @@ namespace ElementalBreaker
     public sealed class Brick : MonoBehaviour
     {
         [SerializeField, Min(1)] private int startingHealth = 3;
-        [SerializeField] private TextMesh healthLabel;
+        [SerializeField] private TMP_Text healthLabel;
 
         private BoxCollider2D hitbox;
         private bool destroyed;
@@ -16,6 +17,8 @@ namespace ElementalBreaker
         public int Row { get; private set; } = -1;
         public int Column { get; private set; } = -1;
         public int Health { get; private set; }
+        public bool GrantsBall { get; private set; }
+        public ElementType Element { get; private set; }
 
         private void Awake()
         {
@@ -28,19 +31,26 @@ namespace ElementalBreaker
         private void CacheComponents()
         {
             hitbox = GetComponent<BoxCollider2D>();
+            // 연결이 비어 있으면 자식의 HP 텍스트를 찾아 써.
             if (healthLabel == null)
-                healthLabel = GetComponentInChildren<TextMesh>(true);
+                healthLabel = GetComponentInChildren<TMP_Text>(true);
         }
 
-        public void Spawn(BrickBoard owner, int row, int column, int health, Vector2 size)
+        public void Spawn(BrickBoard owner, int row, int column, int health, Vector2 size, bool grantsBall = false,
+            ElementType element = ElementType.Normal)
         {
             CacheComponents();
             board = owner;
+            GrantsBall = grantsBall;
+            Element = element;
             Row = row;
             Column = column;
             Health = Mathf.Max(1, health);
             destroyed = false;
             SpriteRenderer visual = GetComponent<SpriteRenderer>();
+            Sprite elementSprite = ElementRules.GetSprite(element, false);
+            if (elementSprite != null)
+                visual.sprite = elementSprite;
             Bounds bounds = visual.sprite.bounds;
             visual.drawMode = SpriteDrawMode.Simple;
             transform.localRotation = Quaternion.identity;
@@ -89,7 +99,7 @@ namespace ElementalBreaker
         private void RefreshLabel()
         {
             if (healthLabel != null)
-                healthLabel.text = Health.ToString();
+                healthLabel.SetText("{0}", Health);
         }
     }
 }

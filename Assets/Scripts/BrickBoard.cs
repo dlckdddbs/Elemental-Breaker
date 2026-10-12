@@ -10,6 +10,8 @@ namespace ElementalBreaker
         [SerializeField] private BallLauncher launcher;
         [Tooltip("같은 오브젝트에 Brick, SpriteRenderer, BoxCollider2D가 있는 프리팹 또는 씬 견본")]
         [SerializeField] private Brick brickTemplate;
+        [SerializeField] private Brick ballBonusBrickTemplate;
+        [SerializeField, Range(0f, 1f)] private float ballBonusProbability = 0.15f;
         [Tooltip("월드 좌표의 보드 중심")]
         [SerializeField] private Vector2 boardCenter = new Vector2(0f, 0.7f);
         [SerializeField] private Vector2 boardSize = new Vector2(4.6f, 7f);
@@ -26,6 +28,7 @@ namespace ElementalBreaker
 
         private Brick[,] cells;
         private Stack<Brick> pool;
+        private Stack<Brick> bonusPool;
         private Transform poolRoot;
         private int[] columnOrder;
         private Vector2 cellSize;
@@ -69,22 +72,40 @@ namespace ElementalBreaker
             }
 
             ClampSettings();
+            if (ballBonusBrickTemplate != null &&
+                (!ballBonusBrickTemplate.TryGetComponent(out SpriteRenderer bonusVisual) ||
+                 bonusVisual.sprite == null || bonusVisual.sprite.bounds.size.x <= 0f ||
+                 bonusVisual.sprite.bounds.size.y <= 0f))
+            {
+                Debug.LogError("BrickBoard: 공 획득 벽돌의 SpriteRenderer와 Sprite를 확인해.", this);
+                enabled = false;
+                return;
+            }
             cellSize = new Vector2(boardSize.x / columns, boardSize.y / rows);
             brickSize = cellSize - brickGap;
             cells = new Brick[rows, columns];
             columnOrder = new int[columns];
             int capacity = columns * rows;
             pool = new Stack<Brick>(capacity);
+            bonusPool = new Stack<Brick>(capacity);
             // 부모 스케일과 회전에 영향받지 않는 풀을 한 번 만들어.
             poolRoot = new GameObject("Brick Pool").transform;
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(poolRoot.gameObject, gameObject.scene);
             if (brickTemplate.gameObject.scene.IsValid())
                 brickTemplate.gameObject.SetActive(false);
+            if (ballBonusBrickTemplate != null && ballBonusBrickTemplate.gameObject.scene.IsValid())
+                ballBonusBrickTemplate.gameObject.SetActive(false);
             for (int i = 0; i < capacity; i++)
             {
                 Brick brick = Instantiate(brickTemplate, poolRoot);
                 brick.gameObject.SetActive(false);
                 pool.Push(brick);
+                if (ballBonusBrickTemplate != null)
+                {
+                    Brick bonusBrick = Instantiate(ballBonusBrickTemplate, poolRoot);
+                    bonusBrick.gameObject.SetActive(false);
+                    bonusPool.Push(bonusBrick);
+                }
             }
             initialized = true;
             lastProcessedTurn = launcher.CompletedTurnCount;
@@ -178,9 +199,11 @@ namespace ElementalBreaker
                 columnOrder[i] = column;
                 if (spawnProbability <= 0f || (spawnProbability < 1f && UnityEngine.Random.value >= spawnProbability))
                     continue;
-                Brick brick = pool.Pop();
+                bool grantsBall = ballBonusBrickTemplate != null && ballBonusProbability > 0f &&
+                    (ballBonusProbability >= 1f || UnityEngine.Random.value < ballBonusProbability);
+                Brick brick = grantsBall ? bonusPool.Pop() : pool.Pop();
                 cells[0, column] = brick;
-                brick.Spawn(this, 0, column, health, brickSize);
+                brick.Spawn(this, 0, column, health, brickSize, grantsBall, ElementRules.RandomElement());
                 spawned++;
             }
         }
@@ -192,8 +215,14 @@ namespace ElementalBreaker
             if (row < 0 || row >= rows || column < 0 || column >= columns || cells[row, column] != brick)
                 return;
             cells[row, column] = null;
+            // 칸을 먼저 비워서 중복 반환이나 보상 지급을 막아.
+            if (brick.GrantsBall && brick.Health == 0 && !IsGameOver)
+                launcher.AddBall();
             brick.Despawn();
-            pool.Push(brick);
+            if (brick.GrantsBall)
+                bonusPool.Push(brick);
+            else
+                pool.Push(brick);
         }
 
         private void ClampSettings()
@@ -206,6 +235,7 @@ namespace ElementalBreaker
                 Mathf.Clamp(brickGap.y, 0f, boardSize.y / rows * 0.95f));
             maxBricksPerRow = Mathf.Clamp(maxBricksPerRow, 0, Mathf.Min(6, columns));
             spawnProbability = Mathf.Clamp01(spawnProbability);
+            ballBonusProbability = Mathf.Clamp01(ballBonusProbability);
             baseHealth = Mathf.Max(1, baseHealth);
             healthPerTurn = Mathf.Max(0, healthPerTurn);
             descentDuration = Mathf.Max(0f, descentDuration);

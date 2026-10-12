@@ -15,13 +15,40 @@ namespace ElementalBreaker
         private PhysicsMaterial2D bounceMaterial;
         private Vector2 launchPosition;
         private Vector2 lastDirection = Vector2.up;
+        private SpriteRenderer visual;
 
         public bool IsFlying { get; private set; }
         public bool IsDescending => IsFlying && body.linearVelocity.y < 0f;
         public event Action<Ball> Returned;
+        public event Action<Ball> Retired;
+        public ElementType Element { get; private set; }
+        public int ReverseHitCount { get; private set; }
+
+        public void PrepareTurn(Vector2 position, ElementType element)
+        {
+            Prepare(position);
+            Element = element;
+            ReverseHitCount = 0;
+            if (visual == null)
+                visual = GetComponent<SpriteRenderer>();
+            if (visual != null)
+            {
+                Sprite sprite = ElementRules.GetSprite(element, true);
+                if (sprite != null)
+                    visual.sprite = sprite;
+                visual.enabled = true;
+            }
+        }
 
         private void Awake()
         {
+            InitializePhysics();
+        }
+
+        private void InitializePhysics()
+        {
+            if (body != null)
+                return;
             body = GetComponent<Rigidbody2D>();
             body.bodyType = RigidbodyType2D.Dynamic;
             body.gravityScale = 0f;
@@ -43,6 +70,8 @@ namespace ElementalBreaker
 
         public void Prepare(Vector2 position)
         {
+            // 비활성 프리팹에서 만든 공도 물리를 먼저 준비해.
+            InitializePhysics();
             IsFlying = false;
             body.linearVelocity = Vector2.zero;
             body.angularVelocity = 0f;
@@ -90,7 +119,23 @@ namespace ElementalBreaker
         private void OnCollisionEnter2D(Collision2D collision)
         {
             if (IsFlying && collision.collider.TryGetComponent(out Brick brick))
-                brick.TakeDamage(1);
+                HitBrick(brick);
+        }
+
+        private void HitBrick(Brick brick)
+        {
+            if (!IsFlying || brick == null || brick.Health <= 0)
+                return;
+            bool reverse = ElementRules.HasAdvantage(brick.Element, Element);
+            brick.TakeDamage(ElementRules.Damage(Element, brick.Element));
+            if (!reverse || ++ReverseHitCount < 2)
+                return;
+
+            // 퇴장은 바닥 회수와 구분해서 발사 위치를 바꾸지 않아.
+            Prepare(launchPosition);
+            if (visual != null)
+                visual.enabled = false;
+            Retired?.Invoke(this);
         }
 
         public void ReturnToLaunch()

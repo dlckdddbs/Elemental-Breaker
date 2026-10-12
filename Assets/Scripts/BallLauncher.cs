@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,6 +12,7 @@ namespace ElementalBreaker
         [SerializeField] private Camera aimCamera;
         [SerializeField] private Ball ball;
         [SerializeField] private Transform launchPoint;
+        [SerializeField] private TMP_Text ballCountLabel;
         [Tooltip("플레이 시작 시 생성할 공 개수. 변경 후 플레이를 다시 시작해 주세요.")]
         [SerializeField, Min(1)] private int testBallCount = 5;
         [Tooltip("공 발사 간격(초). 물리 프레임 단위로 적용됩니다.")]
@@ -37,20 +39,48 @@ namespace ElementalBreaker
         private int nextBallIndex;
         private float launchCountdown;
         private bool hasReturnPosition;
+        private int acquiredBallCount;
+        private bool needsTurnPreparation = true;
+        public ElementType TurnElement { get; private set; }
 
         public bool IsTurnActive { get; private set; }
         public int PendingBallCount { get; private set; }
         public int FlyingBallCount => flyingBalls.Count;
-        public int BallCount => balls.Count;
+        public int BallCount => balls.Count + acquiredBallCount;
         public int CompletedTurnCount { get; private set; }
         public bool IsInputBlocked { get; private set; }
         public event Action TurnEnded;
+
+        public void AddBall()
+        {
+            // 현재 턴 발사 목록은 유지하고 다음 턴에 합류시켜.
+            acquiredBallCount++;
+            RefreshBallCount();
+        }
+
+        private void RefreshBallCount()
+        {
+            if (ballCountLabel != null)
+                ballCountLabel.SetText("공 × {0}", BallCount);
+        }
 
         public void SetInputBlocked(bool blocked)
         {
             IsInputBlocked = blocked;
             if (blocked)
                 CancelAim();
+            else if (ready && !IsTurnActive)
+                PrepareUpcomingTurn();
+        }
+
+        private void PrepareUpcomingTurn()
+        {
+            if (!needsTurnPreparation)
+                return;
+            needsTurnPreparation = false;
+            TurnElement = ElementRules.RandomElement();
+            foreach (Ball pooledBall in balls)
+                pooledBall.PrepareTurn(launchPoint.position, TurnElement);
         }
 
         private void Awake()
@@ -116,16 +146,30 @@ namespace ElementalBreaker
                 return;
             }
             // 최초 한 번만 생성하고 이후 턴에는 같은 공들을 재사용해.
-            ball.Prepare(launchPoint.position);
+            bool hasSceneBall = ball.gameObject.scene.IsValid();
             for (int i = 0; i < Mathf.Max(1, testBallCount); i++)
             {
-                Ball pooledBall = i == 0 ? ball : Instantiate(ball, ball.transform.parent);
+                // 프리팹 원본에는 접근하지 않고 생성된 공만 준비해.
+                Ball pooledBall = i == 0 && hasSceneBall ? ball : CreateBall();
                 pooledBall.Prepare(launchPoint.position);
+                pooledBall.gameObject.SetActive(true);
                 pooledBall.Returned += OnBallReturned;
+                pooledBall.Retired += OnBallRetired;
                 balls.Add(pooledBall);
                 ballColliders.Add(pooledBall.GetComponent<Collider2D>());
             }
             ready = true;
+            PrepareUpcomingTurn();
+            RefreshBallCount();
+        }
+
+        private Ball CreateBall()
+        {
+            Transform parent = ball.gameObject.scene.IsValid() ? ball.transform.parent : null;
+            Ball created = Instantiate(ball, parent);
+            created.Prepare(launchPoint.position);
+            created.gameObject.SetActive(true);
+            return created;
         }
 
         private void BeginTurn(Vector2 direction)
@@ -133,6 +177,17 @@ namespace ElementalBreaker
             if (!ready || IsTurnActive || IsInputBlocked)
                 return;
 
+            // 획득한 만큼만 풀을 늘리고 이후에는 계속 재사용해.
+            while (acquiredBallCount > 0)
+            {
+                Ball addedBall = CreateBall();
+                addedBall.Returned += OnBallReturned;
+                addedBall.Retired += OnBallRetired;
+                addedBall.PrepareTurn(launchPoint.position, TurnElement);
+                balls.Add(addedBall);
+                ballColliders.Add(addedBall.GetComponent<Collider2D>());
+                acquiredBallCount--;
+            }
             IsTurnActive = true;
             hasReturnPosition = false;
             turnLaunchPosition = launchPoint.position;
@@ -174,13 +229,28 @@ namespace ElementalBreaker
             }
             returnedBall.Prepare(launchPoint.position);
 
+            TryEndTurn();
+        }
+
+        private void OnBallRetired(Ball retiredBall)
+        {
+            if (!IsTurnActive || !flyingBalls.Remove(retiredBall))
+                return;
+            TryEndTurn();
+        }
+
+        private void TryEndTurn()
+        {
             if (PendingBallCount != 0 || FlyingBallCount != 0)
                 return;
 
             IsTurnActive = false;
+            needsTurnPreparation = true;
             CompletedTurnCount++;
             CancelAim();
             TurnEnded?.Invoke();
+            if (!IsInputBlocked)
+                PrepareUpcomingTurn();
         }
 
         private void FixedUpdate()
@@ -294,6 +364,7 @@ namespace ElementalBreaker
                 if (pooledBall == null)
                     continue;
                 pooledBall.Returned -= OnBallReturned;
+                pooledBall.Retired -= OnBallRetired;
                 if (pooledBall != ball)
                     Destroy(pooledBall.gameObject);
             }
