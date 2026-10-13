@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,7 +11,6 @@ namespace ElementalBreaker
         [SerializeField] private Camera aimCamera;
         [SerializeField] private Ball ball;
         [SerializeField] private Transform launchPoint;
-        [SerializeField] private TMP_Text ballCountLabel;
         [Tooltip("플레이 시작 시 생성할 공 개수. 변경 후 플레이를 다시 시작해 주세요.")]
         [SerializeField, Min(1)] private int testBallCount = 5;
         [Tooltip("공 발사 간격(초). 물리 프레임 단위로 적용됩니다.")]
@@ -24,6 +22,15 @@ namespace ElementalBreaker
         [SerializeField, Min(0.01f)] private float aimLineWidth = 0.04f;
         [SerializeField] private Color aimLineColor = new Color(0.4f, 0.9f, 1f, 1f);
         [SerializeField, Min(0.1f)] private float aimStartHeight = 2f;
+        [Header("트레일")]
+        [Tooltip("동시에 쓰는 트레일 최대 개수. 공이 이보다 많으면 간격을 두고 나눠 붙여.")]
+        [SerializeField, Min(0)] private int maxTrails = 10;
+        [Tooltip("공 간격(발사 간격 × 속도)보다 확실히 짧아야 공끼리 이어져 보이지 않아.")]
+        [SerializeField, Min(0.01f)] private float trailTime = 0.045f;
+        [SerializeField, Min(0.01f)] private float trailWidth = 0.18f;
+
+        // 공이 적어도 두 개 중 하나에만 트레일을 붙여서 화면이 복잡해지지 않게 해.
+        private const int MinTrailInterval = 2;
 
         private InputAction pointerPosition;
         private InputAction pointerPress;
@@ -34,6 +41,13 @@ namespace ElementalBreaker
         private readonly List<Ball> balls = new List<Ball>();
         private readonly HashSet<Ball> flyingBalls = new HashSet<Ball>();
         private readonly List<Collider2D> ballColliders = new List<Collider2D>();
+        // 공의 발사 순서를 바로 찾으려고 둬. 트레일을 넘길 다음 공을 고를 때 써.
+        private readonly Dictionary<Ball, int> ballIndices = new Dictionary<Ball, int>();
+        private BallTrailPool trailPool;
+        private BallRetireEffects retireEffects;
+        // 공끼리 부딪히지 않게 쓰는 레이어야. 프로젝트에 Ball 레이어가 없으면 -1이야.
+        private int ballLayer = -1;
+        private const string BallLayerName = "Ball";
         private Vector2 turnLaunchPosition;
         private Vector2 turnDirection;
         private int nextBallIndex;
@@ -42,11 +56,23 @@ namespace ElementalBreaker
         private int acquiredBallCount;
         private bool needsTurnPreparation = true;
         public ElementType TurnElement { get; private set; }
+        public ElementType? ReservedElement { get; private set; }
+
+        public void ReserveNextElement(ElementType element)
+        {
+            if (!IsTurnActive)
+                return;
+            // 나중에 먹은 속성으로 다음 턴 예약을 덮어써.
+            ReservedElement = element;
+        }
 
         public bool IsTurnActive { get; private set; }
         public int PendingBallCount { get; private set; }
         public int FlyingBallCount => flyingBalls.Count;
         public int BallCount => balls.Count + acquiredBallCount;
+        // 이번 턴에 발사하는 공 수야. 이번 턴에 얻은 공은 다음 턴부터 합류해서 따로 세.
+        public int ActiveBallCount => balls.Count;
+        public int AcquiredBallCount => acquiredBallCount;
         public int CompletedTurnCount { get; private set; }
         public bool IsInputBlocked { get; private set; }
         public event Action TurnEnded;
@@ -55,13 +81,6 @@ namespace ElementalBreaker
         {
             // 현재 턴 발사 목록은 유지하고 다음 턴에 합류시켜.
             acquiredBallCount++;
-            RefreshBallCount();
-        }
-
-        private void RefreshBallCount()
-        {
-            if (ballCountLabel != null)
-                ballCountLabel.SetText("공 × {0}", BallCount);
         }
 
         public void SetInputBlocked(bool blocked)
@@ -78,7 +97,9 @@ namespace ElementalBreaker
             if (!needsTurnPreparation)
                 return;
             needsTurnPreparation = false;
-            TurnElement = ElementRules.RandomElement();
+            // 속성 아이템을 안 먹었으면 직전 턴 속성을 유지해. 첫 턴은 기본값인 일반이야.
+            TurnElement = ReservedElement ?? TurnElement;
+            ReservedElement = null;
             foreach (Ball pooledBall in balls)
                 pooledBall.PrepareTurn(launchPoint.position, TurnElement);
         }
@@ -145,6 +166,12 @@ namespace ElementalBreaker
                 enabled = false;
                 return;
             }
+            // 공끼리 충돌은 레이어 설정 한 번으로 꺼서, 발사할 때마다 공 수만큼 반복하지 않게 해.
+            ballLayer = LayerMask.NameToLayer(BallLayerName);
+            if (ballLayer >= 0)
+                Physics2D.IgnoreLayerCollision(ballLayer, ballLayer, true);
+            else
+                Debug.LogWarning("Ball 레이어가 없어서 공끼리 충돌을 발사할 때마다 하나씩 꺼. Tags and Layers에 Ball 레이어를 추가해.", this);
             // 최초 한 번만 생성하고 이후 턴에는 같은 공들을 재사용해.
             bool hasSceneBall = ball.gameObject.scene.IsValid();
             for (int i = 0; i < Mathf.Max(1, testBallCount); i++)
@@ -153,14 +180,27 @@ namespace ElementalBreaker
                 Ball pooledBall = i == 0 && hasSceneBall ? ball : CreateBall();
                 pooledBall.Prepare(launchPoint.position);
                 pooledBall.gameObject.SetActive(true);
-                pooledBall.Returned += OnBallReturned;
-                pooledBall.Retired += OnBallRetired;
-                balls.Add(pooledBall);
-                ballColliders.Add(pooledBall.GetComponent<Collider2D>());
+                AddToPool(pooledBall);
+            }
+            SpriteRenderer ballVisual = ball.GetComponent<SpriteRenderer>();
+            int ballOrder = ballVisual != null ? ballVisual.sortingOrder : 0;
+            if (ballVisual != null)
+            {
+                // 퇴장 이펙트는 벽돌 바로 앞에서 터지니까 벽돌 숫자(+2)보다 위에 그려.
+                retireEffects = new GameObject("Ball Retire Effects").AddComponent<BallRetireEffects>();
+                retireEffects.transform.SetParent(transform, false);
+                retireEffects.Initialize(ballVisual.sharedMaterial, ballVisual.sortingLayerID, ballOrder + 3,
+                    ball.transform.lossyScale.x);
+            }
+            if (maxTrails > 0)
+            {
+                // 조준선 재질을 같이 써서 재질을 따로 만들지 않아.
+                // 공 바로 뒤(ballOrder - 1)는 속성 오라 자리라 트레일은 그보다 뒤에 그려.
+                trailPool = new BallTrailPool(transform, maxTrails, trailTime, trailWidth, ballOrder - 2,
+                    aimLine != null ? aimLine.sharedMaterial : null);
             }
             ready = true;
             PrepareUpcomingTurn();
-            RefreshBallCount();
         }
 
         private Ball CreateBall()
@@ -172,6 +212,51 @@ namespace ElementalBreaker
             return created;
         }
 
+        private void AddToPool(Ball pooledBall)
+        {
+            if (ballLayer >= 0)
+                pooledBall.gameObject.layer = ballLayer;
+            pooledBall.Returned += OnBallReturned;
+            pooledBall.Retired += OnBallRetired;
+            ballIndices.Add(pooledBall, balls.Count);
+            balls.Add(pooledBall);
+            ballColliders.Add(pooledBall.GetComponent<Collider2D>());
+        }
+
+        private void AssignTrails()
+        {
+            // 속성 공은 오라가 꼬리 역할을 해서 트레일은 일반 공에만 붙여.
+            if (trailPool == null || TurnElement != ElementType.Normal)
+                return;
+            // 공이 많으면 간격을 두고 붙여서 공 줄 전체에 트레일이 고르게 보이게 해.
+            int interval = Mathf.Max(MinTrailInterval, Mathf.CeilToInt(balls.Count / (float)maxTrails));
+            for (int i = 0; i < balls.Count; i += interval)
+            {
+                TrailRenderer trail = trailPool.Rent();
+                if (trail == null)
+                    return;
+                balls[i].AttachTrail(trail);
+            }
+        }
+
+        private void PassTrail(Ball stoppedBall)
+        {
+            if (trailPool == null || !stoppedBall.HasTrail)
+                return;
+            TrailRenderer trail = stoppedBall.DetachTrail();
+            // 바로 뒤에서 날고 있거나 아직 발사 전인 공에 넘겨서 맨 앞 공에 트레일이 남게 해.
+            for (int i = ballIndices[stoppedBall] + 1; i < balls.Count; i++)
+            {
+                Ball candidate = balls[i];
+                if (!candidate.HasTrail && (candidate.IsFlying || i >= nextBallIndex))
+                {
+                    candidate.AttachTrail(trail);
+                    return;
+                }
+            }
+            trailPool.Return(trail);
+        }
+
         private void BeginTurn(Vector2 direction)
         {
             if (!ready || IsTurnActive || IsInputBlocked)
@@ -181,11 +266,8 @@ namespace ElementalBreaker
             while (acquiredBallCount > 0)
             {
                 Ball addedBall = CreateBall();
-                addedBall.Returned += OnBallReturned;
-                addedBall.Retired += OnBallRetired;
                 addedBall.PrepareTurn(launchPoint.position, TurnElement);
-                balls.Add(addedBall);
-                ballColliders.Add(addedBall.GetComponent<Collider2D>());
+                AddToPool(addedBall);
                 acquiredBallCount--;
             }
             IsTurnActive = true;
@@ -194,6 +276,7 @@ namespace ElementalBreaker
             turnDirection = direction;
             nextBallIndex = 0;
             PendingBallCount = balls.Count;
+            AssignTrails();
             LaunchNextBall();
         }
 
@@ -206,11 +289,15 @@ namespace ElementalBreaker
             nextBall.Prepare(turnLaunchPosition);
             flyingBalls.Add(nextBall);
             nextBall.Launch(turnDirection);
-            // 회수 시 물리 시뮬레이션을 끄므로 매 발사 때 충돌 제외를 다시 설정해.
-            for (int i = 0; i < balls.Count; i++)
+            // Ball 레이어가 있으면 공끼리 충돌은 레이어 설정으로 이미 꺼져 있어. 없을 때만 예전처럼 하나씩 꺼.
+            if (ballLayer < 0)
             {
-                if (balls[i] != nextBall && balls[i].IsFlying)
-                    Physics2D.IgnoreCollision(nextCollider, ballColliders[i]);
+                // 회수 시 물리 시뮬레이션을 끄므로 매 발사 때 충돌 제외를 다시 설정해.
+                for (int i = 0; i < balls.Count; i++)
+                {
+                    if (balls[i] != nextBall && balls[i].IsFlying)
+                        Physics2D.IgnoreCollision(nextCollider, ballColliders[i]);
+                }
             }
             launchCountdown = Mathf.Max(0.01f, launchInterval);
         }
@@ -219,6 +306,7 @@ namespace ElementalBreaker
         {
             if (!IsTurnActive || !flyingBalls.Remove(returnedBall))
                 return;
+            PassTrail(returnedBall);
 
             if (!hasReturnPosition)
             {
@@ -236,6 +324,9 @@ namespace ElementalBreaker
         {
             if (!IsTurnActive || !flyingBalls.Remove(retiredBall))
                 return;
+            if (retireEffects != null)
+                retireEffects.Play(retiredBall.Element, retiredBall.RetirePosition, retiredBall.RetireDirection);
+            PassTrail(retiredBall);
             TryEndTurn();
         }
 
@@ -372,6 +463,7 @@ namespace ElementalBreaker
             pointerPress?.Dispose();
             if (generatedAimMaterial != null)
                 Destroy(generatedAimMaterial);
+            trailPool?.Dispose();
         }
     }
 }

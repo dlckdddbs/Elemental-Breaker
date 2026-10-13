@@ -97,8 +97,7 @@ namespace ElementalBreaker.Editor
             Vector3 spriteSize = tracked.GetComponent<SpriteRenderer>().bounds.size;
             Check(Mathf.Abs(spriteSize.x - (4.6f / 7f - 0.08f)) < 0.001f &&
                 Mathf.Abs(spriteSize.y - 0.62f) < 0.001f, "Sprite 크기 자동 계산 실패");
-            Check((tracked.GetComponent<BoxCollider2D>().size -
-                (Vector2)tracked.GetComponent<SpriteRenderer>().sprite.bounds.size).sqrMagnitude < 0.0001f,
+            Check((tracked.GetComponent<BoxCollider2D>().size - (Vector2)spriteSize).sqrMagnitude < 0.0001f,
                 "Collider 크기 자동 계산 실패");
 
             int endEvents = 0;

@@ -84,7 +84,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 2139013544004229296, guid: 5ed053970ed8ba24397710cbec19d803, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b6b456c591955714d9d952bc15f96230, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -130,9 +130,9 @@ BoxCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: -0.0047622174}
   m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
+    border: {x: 0.12, y: 0.16, z: 0.12, w: 0.12}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1.18, y: 0.5}
+    oldSize: {x: 0.32, y: 0.32}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -154,6 +154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ElementalBreaker.Brick
   startingHealth: 3
   healthLabel: {fileID: 0}
+  iconInset: 0.04
 --- !u!1 &5746465650601940101
 GameObject:
   m_ObjectHideFlags: 0
@@ -216,7 +217,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  - {fileID: 2100000, guid: 68ab6c8ba33c23144b86de172c1367f1, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -262,8 +263,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 5
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 06324e71524180942bce6b04ec5c6869, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 68ab6c8ba33c23144b86de172c1367f1, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -287,13 +288,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 2.5
-  m_fontSizeBase: 2.5
+  m_fontSize: 2.8
+  m_fontSizeBase: 2.8
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535

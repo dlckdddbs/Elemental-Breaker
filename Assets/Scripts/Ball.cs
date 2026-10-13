@@ -11,18 +11,40 @@ namespace ElementalBreaker
         [SerializeField, Range(0.01f, 0.5f)] private float minimumVerticalRatio = 0.08f;
         [SerializeField] private float fallbackReturnY = -8.6f;
 
+        private const int RetireHitCount = 2;
+        // 퇴장 직전 단계에서 흰색 쪽으로 섞이는 최대 비율이야.
+        private const float MaxFade = 0.7f;
+        // 트레일 머리 쪽 불투명도야. 꼬리 쪽은 투명해져.
+        private const float TrailAlpha = 0.4f;
+        // 트레일을 공보다 살짝 밝게 해서 어두운 배경에서 빛 꼬리처럼 보이게 해.
+        private const float TrailWhiten = 0.28f;
+        private const string AuraName = "Element Aura";
+        private const float AuraFps = 12f;
+        // 공이 연해질 때 오라도 이 비율만큼 같이 투명해져.
+        private const float AuraFadeAlpha = 0.6f;
+
         private Rigidbody2D body;
         private PhysicsMaterial2D bounceMaterial;
         private Vector2 launchPosition;
         private Vector2 lastDirection = Vector2.up;
         private SpriteRenderer visual;
+        private TrailRenderer trail;
+        private SpriteRenderer aura;
+        private Sprite[] auraFrames;
+        private int auraFrame = -1;
+        private int auraFrameOffset;
+        private float fade;
 
         public bool IsFlying { get; private set; }
+        public bool HasTrail => trail != null;
         public bool IsDescending => IsFlying && body.linearVelocity.y < 0f;
         public event Action<Ball> Returned;
         public event Action<Ball> Retired;
         public ElementType Element { get; private set; }
         public int ReverseHitCount { get; private set; }
+        // 퇴장하면 바로 발사 위치로 옮겨져서, 퇴장 이펙트에 쓸 위치와 방향을 따로 남겨.
+        public Vector2 RetirePosition { get; private set; }
+        public Vector2 RetireDirection { get; private set; }
 
         public void PrepareTurn(Vector2 position, ElementType element)
         {
@@ -33,16 +55,93 @@ namespace ElementalBreaker
                 visual = GetComponent<SpriteRenderer>();
             if (visual != null)
             {
-                Sprite sprite = ElementRules.GetSprite(element, true);
+                // 문양만 다른 회색 공 이미지에 속성 색을 틴트로 입혀.
+                Sprite sprite = ElementRules.GetBallSprite(element);
                 if (sprite != null)
                     visual.sprite = sprite;
                 visual.enabled = true;
+                EnsureAura();
+            }
+            auraFrames = ElementRules.GetAuraFrames(element);
+            auraFrame = -1;
+            fade = 0f;
+            ApplyColor();
+        }
+
+        public void AttachTrail(TrailRenderer value)
+        {
+            trail = value;
+            trail.transform.SetParent(transform, false);
+            trail.transform.localPosition = Vector3.zero;
+            trail.gameObject.SetActive(true);
+            // 이전 주인의 궤적이 이어 그려지지 않게 비우고 시작해.
+            trail.Clear();
+            ApplyColor();
+            trail.emitting = true;
+        }
+
+        public TrailRenderer DetachTrail()
+        {
+            TrailRenderer detached = trail;
+            trail = null;
+            return detached;
+        }
+
+        private void EnsureAura()
+        {
+            if (aura != null)
+                return;
+
+            // 하이어라키를 건드리지 않게 실행 중에 한 번만 만들어. 복제된 공은 원본의 오라를 다시 써.
+            Transform existing = transform.Find(AuraName);
+            aura = existing != null
+                ? existing.GetComponent<SpriteRenderer>()
+                : new GameObject(AuraName).AddComponent<SpriteRenderer>();
+            aura.transform.SetParent(transform, false);
+            aura.transform.localPosition = Vector3.zero;
+            aura.sharedMaterial = visual.sharedMaterial;
+            aura.sortingLayerID = visual.sortingLayerID;
+            aura.sortingOrder = visual.sortingOrder - 1;
+            aura.enabled = false;
+        }
+
+        private void ApplyColor()
+        {
+            Color color = ElementRules.GetBallTint(Element, fade);
+            if (visual != null)
+                visual.color = color;
+            if (aura != null)
+                aura.color = new Color(1f, 1f, 1f, 1f - fade * AuraFadeAlpha);
+            if (trail != null)
+            {
+                Color light = Color.Lerp(color, Color.white, TrailWhiten);
+                trail.startColor = new Color(light.r, light.g, light.b, TrailAlpha);
+                trail.endColor = new Color(light.r, light.g, light.b, 0f);
             }
         }
 
         private void Awake()
         {
             InitializePhysics();
+            // 공마다 프레임을 엇갈려서 다 같이 똑같이 깜빡이지 않게 해.
+            auraFrameOffset = UnityEngine.Random.Range(0, ElementRules.AuraFrameCount);
+        }
+
+        private void Update()
+        {
+            if (!IsFlying || aura == null || !aura.enabled)
+                return;
+
+            // 오라는 날아가는 반대쪽으로 늘어지게 진행 방향으로 돌려.
+            Vector2 velocity = body.linearVelocity;
+            if (velocity.sqrMagnitude > 0.0001f)
+                aura.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(velocity.y, velocity.x) * Mathf.Rad2Deg);
+            int frame = ((int)(Time.time * AuraFps) + auraFrameOffset) % ElementRules.AuraFrameCount;
+            if (frame != auraFrame)
+            {
+                auraFrame = frame;
+                aura.sprite = auraFrames[frame];
+            }
         }
 
         private void InitializePhysics()
@@ -73,6 +172,9 @@ namespace ElementalBreaker
             // 비활성 프리팹에서 만든 공도 물리를 먼저 준비해.
             InitializePhysics();
             IsFlying = false;
+            // 멈춰 있는 공은 방향이 없어서 오라를 숨겨.
+            if (aura != null)
+                aura.enabled = false;
             body.linearVelocity = Vector2.zero;
             body.angularVelocity = 0f;
             body.simulated = false;
@@ -90,6 +192,11 @@ namespace ElementalBreaker
             body.simulated = true;
             IsFlying = true;
             body.linearVelocity = lastDirection * speed;
+            if (aura != null && auraFrames != null)
+            {
+                aura.enabled = true;
+                auraFrame = -1;
+            }
         }
 
         private void FixedUpdate()
@@ -127,10 +234,20 @@ namespace ElementalBreaker
             if (!IsFlying || brick == null || brick.Health <= 0)
                 return;
             bool reverse = ElementRules.HasAdvantage(brick.Element, Element);
-            brick.TakeDamage(ElementRules.Damage(Element, brick.Element));
-            if (!reverse || ++ReverseHitCount < 2)
+            brick.TakeHit(ElementRules.Damage(Element, brick.Element), Element, body.position);
+            if (!reverse)
                 return;
+            if (++ReverseHitCount < RetireHitCount)
+            {
+                // 역상성에 맞을 때마다 연해져서 퇴장까지 남은 횟수를 보여 줘.
+                fade = MaxFade * ReverseHitCount / (RetireHitCount - 1);
+                ApplyColor();
+                return;
+            }
 
+            // 부딪히기 직전 진행 방향을 남겨서 오라가 꺼지는 모습이 원래 방향을 유지하게 해.
+            RetirePosition = body.position;
+            RetireDirection = lastDirection;
             // 퇴장은 바닥 회수와 구분해서 발사 위치를 바꾸지 않아.
             Prepare(launchPosition);
             if (visual != null)

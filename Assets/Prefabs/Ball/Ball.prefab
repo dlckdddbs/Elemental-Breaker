@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1287676908323880383}
   - component: {fileID: 8292051908092789798}
   - component: {fileID: 2033542690642636208}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Ball
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -88,7 +88,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -5678444961678695732, guid: 297ecab44f58c3e4fb3821b0c8389a71, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0dccbbad3dae641418876fbc242cc4df, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
