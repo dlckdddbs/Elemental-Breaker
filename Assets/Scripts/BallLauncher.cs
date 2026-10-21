@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace ElementalBreaker
@@ -51,6 +52,8 @@ namespace ElementalBreaker
         private Vector2 turnLaunchPosition;
         private Vector2 turnDirection;
         private int nextBallIndex;
+        // 아직 날고 있는 공 중 가장 먼저 쏜 공의 순번이야. 앞으로만 넘어가서 찾는 비용이 거의 없어.
+        private int frontBallIndex;
         private float launchCountdown;
         private bool hasReturnPosition;
         private int acquiredBallCount;
@@ -73,9 +76,56 @@ namespace ElementalBreaker
         // 이번 턴에 발사하는 공 수야. 이번 턴에 얻은 공은 다음 턴부터 합류해서 따로 세.
         public int ActiveBallCount => balls.Count;
         public int AcquiredBallCount => acquiredBallCount;
+
+        // 맨 앞 공: 남아 있는 공 중 가장 앞에 있는 공. 앞의 공이 회수되거나 퇴장하면 다음 공이 맨 앞이 돼.
+        public Ball FrontBall
+        {
+            get
+            {
+                if (!IsTurnActive)
+                    return null;
+                while (frontBallIndex < nextBallIndex && !balls[frontBallIndex].IsFlying)
+                    frontBallIndex++;
+                return frontBallIndex < nextBallIndex ? balls[frontBallIndex] : null;
+            }
+        }
         public int CompletedTurnCount { get; private set; }
         public bool IsInputBlocked { get; private set; }
         public event Action TurnEnded;
+
+        // 발사 전이라 상점이나 공 속성 선택을 쓸 수 있는 상태야.
+        public bool CanPrepare => ready && !IsTurnActive && !IsInputBlocked;
+
+        // 발사 전에 이번 턴 공 속성을 바꿔. 대기 중인 공들의 색과 오라도 바로 바뀌어.
+        public void SetTurnElement(ElementType element)
+        {
+            if (!CanPrepare || element == TurnElement)
+                return;
+            TurnElement = element;
+            foreach (Ball pooledBall in balls)
+                pooledBall.PrepareTurn(launchPoint.position, element);
+        }
+
+        // UI(버튼, 상점 목록) 위를 누르면 조준을 시작하지 않으려고 화면 위치로 UI를 검사해.
+        private PointerEventData uiPointer;
+        private EventSystem uiPointerOwner;
+        private readonly List<RaycastResult> uiHits = new List<RaycastResult>();
+
+        private bool IsPointerOverUI(Vector2 screenPosition)
+        {
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null)
+                return false;
+            if (uiPointer == null || uiPointerOwner != eventSystem)
+            {
+                uiPointer = new PointerEventData(eventSystem);
+                uiPointerOwner = eventSystem;
+            }
+            uiPointer.position = screenPosition;
+            uiHits.Clear();
+            eventSystem.RaycastAll(uiPointer, uiHits);
+            return uiHits.Count > 0;
+        }
 
         public void AddBall()
         {
@@ -275,6 +325,7 @@ namespace ElementalBreaker
             turnLaunchPosition = launchPoint.position;
             turnDirection = direction;
             nextBallIndex = 0;
+            frontBallIndex = 0;
             PendingBallCount = balls.Count;
             AssignTrails();
             LaunchNextBall();
@@ -363,7 +414,7 @@ namespace ElementalBreaker
             }
 
             Vector2 screenPosition = pointerPosition.ReadValue<Vector2>();
-            if (pointerPress.WasPressedThisFrame() && TryWorldPoint(screenPosition, out Vector2 start))
+            if (pointerPress.WasPressedThisFrame() && !IsPointerOverUI(screenPosition) && TryWorldPoint(screenPosition, out Vector2 start))
             {
                 // 벽돌 쪽에서 시작한 드래그는 무시해.
                 if (start.y <= launchPoint.position.y + aimStartHeight &&

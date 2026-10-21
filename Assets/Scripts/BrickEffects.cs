@@ -33,7 +33,8 @@ namespace ElementalBreaker
             new Vector2(-0.31f, -0.23f), new Vector2(0f, -0.23f), new Vector2(0.31f, -0.23f)
         };
         private static readonly Vector2 ChunkSizeRatio = new Vector2(0.29f, 0.31f);
-        private static readonly Color LeafGreen = new Color32(0x6C, 0xD1, 0x3F, 0xFF);
+        // 잎 이미지는 회색이라 이 초록을 입혀. 폭탄 파편도 같은 색을 써.
+        internal static readonly Color LeafGreen = new Color32(0x6C, 0xD1, 0x3F, 0xFF);
 
         private sealed class BreakSlot
         {
@@ -53,6 +54,8 @@ namespace ElementalBreaker
             public Color Tint;
             public Vector2 BrickSize;
             public bool Advantage;
+            // 폭탄으로 깬 벽돌이야. 큰 폭발이 대표하니까 하얗게 번쩍인 뒤 조각과 코인만 보여 줘.
+            public bool Plain;
             public float StartTime;
             public bool Active;
         }
@@ -154,7 +157,7 @@ namespace ElementalBreaker
             slot.Renderer.gameObject.SetActive(true);
         }
 
-        public void PlayBreak(Vector3 position, Vector2 brickSize, ElementType brickElement, bool advantage, ElementType attacker)
+        public void PlayBreak(Vector3 position, Vector2 brickSize, ElementType brickElement, bool advantage, ElementType attacker, bool plain = false)
         {
             BreakSlot slot = TakeBreakSlot();
             slot.Active = true;
@@ -164,13 +167,15 @@ namespace ElementalBreaker
             slot.BrickSize = brickSize;
             Sprite burst = bursts[(int)attacker];
             // 상성으로 깼고 공 속성 버스트가 있을 때만 큰 버스트를 써. 이때는 먼지와 벽돌 속성 파편을 빼서 겹치지 않게 해.
-            slot.Advantage = advantage && burst != null;
+            slot.Plain = plain;
+            slot.Advantage = advantage && burst != null && !plain;
             slot.Root.transform.position = new Vector3(position.x, position.y, transform.position.z);
             slot.Root.SetActive(true);
 
             slot.Brick.sprite = brick;
             slot.Brick.size = brickSize;
-            slot.Brick.color = slot.Tint;
+            // 폭탄으로 깨면 처음부터 완전히 하얘. 히트 스톱 동안 그대로 멈춰 있어서 임팩트 프레임이 돼.
+            slot.Brick.color = plain ? Color.white : slot.Tint;
             slot.Brick.enabled = true;
 
             slot.Burst.enabled = slot.Advantage;
@@ -206,7 +211,7 @@ namespace ElementalBreaker
             slot.AccentUsed = 0;
             for (int i = 0; i < AccentCount; i++)
                 slot.Accents[i].enabled = false;
-            if (!slot.Advantage)
+            if (!slot.Advantage && !slot.Plain)
                 SetupAccents(slot);
         }
 
@@ -302,7 +307,7 @@ namespace ElementalBreaker
             {
                 float k = elapsed / PopTime;
                 slot.Brick.size = slot.BrickSize * (1f + 0.08f * k);
-                slot.Brick.color = Color.Lerp(slot.Tint, Color.white, 0.65f * k);
+                slot.Brick.color = slot.Plain ? Color.white : Color.Lerp(slot.Tint, Color.white, 0.65f * k);
             }
             else if (slot.Brick.enabled)
             {
@@ -333,7 +338,7 @@ namespace ElementalBreaker
             float t = life / ChunkLife;
 
             // 일반으로 깰 때만 가운데에 은은한 먼지가 퍼져.
-            if (!slot.Advantage)
+            if (!slot.Advantage && !slot.Plain)
             {
                 if (t < 0.5f)
                 {

@@ -104,6 +104,23 @@ namespace ElementalBreaker
         public static int Damage(ElementType attacker, ElementType defender) =>
             HasAdvantage(attacker, defender) ? 2 : 1;
 
+        // attacker가 이기는 속성이야. 일반은 이기는 속성이 없어서 일반을 돌려줘.
+        public static ElementType WeakTo(ElementType attacker)
+        {
+            switch (attacker)
+            {
+                case ElementType.Fire: return ElementType.Grass;
+                case ElementType.Grass: return ElementType.Water;
+                case ElementType.Water: return ElementType.Fire;
+                default: return ElementType.Normal;
+            }
+        }
+
+        // 폭탄 아이콘 색이야. 속성 턴은 공 색, 일반 턴은 진한 회색 폭탄이야.
+        private static readonly Color32 NormalBombTint = new Color32(0x6B, 0x73, 0x90, 0xFF);
+        public static Color GetBombTint(ElementType element) =>
+            element == ElementType.Normal ? (Color)NormalBombTint : GetBallTint(element);
+
         private static void LoadSprites()
         {
             // 벽돌은 회색 바탕 한 장을 틴트로 공유하고, 공은 문양만 다른 회색 이미지에 틴트를 입혀. 전부 한 번만 읽어.

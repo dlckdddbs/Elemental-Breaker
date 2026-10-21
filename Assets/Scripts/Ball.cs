@@ -225,8 +225,35 @@ namespace ElementalBreaker
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
+            KeepLeavingSurface(collision);
             if (IsFlying && collision.collider.TryGetComponent(out Brick brick))
                 HitBrick(brick);
+        }
+
+        private void OnCollisionStay2D(Collision2D collision) => KeepLeavingSurface(collision);
+
+        // 아주 얕은 각도로 닿으면 물리 엔진이 튕기지 않고 미끄러지게 둬(반발 임계 속도보다 느려서).
+        // 그대로 두면 위쪽 벽을 따라 붙은 채로 안 떨어지니까, 표면에서 멀어지지 않고 있으면 직접 반사시켜.
+        private void KeepLeavingSurface(Collision2D collision)
+        {
+            if (!IsFlying || collision.contactCount == 0)
+                return;
+            ContactPoint2D contact = collision.GetContact(0);
+            // 법선이 공 쪽을 향하도록 맞춰. 접점에서 공 중심으로 가는 방향이 기준이야.
+            Vector2 normal = contact.normal;
+            if (Vector2.Dot(normal, body.position - contact.point) < 0f)
+                normal = -normal;
+            Vector2 velocity = body.linearVelocity;
+            Vector2 direction = velocity.sqrMagnitude > 0.0001f ? velocity.normalized : lastDirection;
+            if (Vector2.Dot(direction, normal) >= minimumVerticalRatio)
+                return;
+
+            direction = Vector2.Reflect(lastDirection, normal);
+            // 반사해도 표면을 거의 따라가면 표면 밖으로 조금 더 꺾어.
+            if (Vector2.Dot(direction, normal) < minimumVerticalRatio)
+                direction = (direction + normal * (minimumVerticalRatio * 2f)).normalized;
+            lastDirection = direction;
+            body.linearVelocity = direction * speed;
         }
 
         private void HitBrick(Brick brick)

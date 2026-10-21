@@ -27,6 +27,15 @@ namespace ElementalBreaker
         [SerializeField, Min(1)] private int baseHealth = 3;
         [SerializeField, Min(0)] private int healthPerTurn = 1;
         [SerializeField, Min(0f)] private float descentDuration = 0.25f;
+        [Header("아이템: 속성 폭탄")]
+        [Tooltip("맨 앞 공 칸에서 몇 칸까지 맞는지야. 1이면 3x3.")]
+        [SerializeField, Min(0)] private int bombRadius = 1;
+        [Tooltip("기본 데미지 = 턴 ÷ 이 값(올림). 유리한 상성이면 2배야.")]
+        [SerializeField, Min(1)] private int bombDamageDivisor = 2;
+        [Tooltip("누르는 순간 게임이 멈춘 듯 느려지며 하얀 섬광 장면(임팩트 프레임)을 보여 주는 시간(초, 실제 시간). 끝나는 순간 폭발이 터져.")]
+        [SerializeField, Min(0f)] private float bombHitStopTime = 0.1f;
+        [Tooltip("느려지는 동안의 게임 속도. 0이면 완전히 멈춰.")]
+        [SerializeField, Range(0f, 1f)] private float bombHitStopScale = 0.05f;
 
         private Brick[,] cells;
         private Stack<Brick> pool;
@@ -46,7 +55,11 @@ namespace ElementalBreaker
         public int DescentCount { get; private set; }
         public BrickEffects Effects { get; private set; }
         public GoldWallet Gold { get; } = new GoldWallet();
+        // 아이템 칸이야. 상점에서 사면 여기에 들어오고, 공이 날아가는 동안 꺼내 써.
+        public ItemSlot Items { get; } = new ItemSlot();
         public event Action GameOver;
+
+        private BombItem bomb;
 
         private const int BreakGold = 1;
         private const int AdvantageBreakGold = 2;
@@ -97,6 +110,11 @@ namespace ElementalBreaker
             Effects = new GameObject("Brick Effects").AddComponent<BrickEffects>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(Effects.gameObject, gameObject.scene);
             Effects.Initialize(visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
+            HitStop hitStop = Effects.gameObject.AddComponent<HitStop>();
+            BombEffects bombEffects = new GameObject("Bomb Effects").AddComponent<BombEffects>();
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(bombEffects.gameObject, gameObject.scene);
+            bombEffects.Initialize(this, launcher, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
+            bomb = new BombItem(this, launcher, hitStop, bombEffects);
             if (brickTemplate.gameObject.scene.IsValid())
                 brickTemplate.gameObject.SetActive(false);
             if (pickupTemplate != null && pickupTemplate.gameObject.scene.IsValid())
@@ -120,6 +138,69 @@ namespace ElementalBreaker
         }
 
         public Brick GetBrick(int row, int column) => cells[row, column];
+
+        // 월드 위치가 들어 있는 칸이야. 보드 밖이면 가장 가까운 칸으로 맞춰.
+        public void WorldToCell(Vector2 position, out int row, out int column)
+        {
+            float left = boardCenter.x - boardSize.x * 0.5f;
+            float top = boardCenter.y + boardSize.y * 0.5f;
+            column = Mathf.Clamp(Mathf.FloorToInt((position.x - left) / cellSize.x), 0, columns - 1);
+            row = Mathf.Clamp(Mathf.FloorToInt((top - position.y) / cellSize.y), 0, rows - 1);
+        }
+
+        // (row, column) 주변 radius칸 안의 벽돌을 results에 담아. 보드 가장자리에서는 안쪽만 봐.
+        public void CollectBricksInRange(int row, int column, int radius, List<Brick> results)
+        {
+            results.Clear();
+            int rowMin = Mathf.Max(0, row - radius), rowMax = Mathf.Min(rows - 1, row + radius);
+            int columnMin = Mathf.Max(0, column - radius), columnMax = Mathf.Min(columns - 1, column + radius);
+            for (int r = rowMin; r <= rowMax; r++)
+                for (int c = columnMin; c <= columnMax; c++)
+                    if (cells[r, c] != null)
+                        results.Add(cells[r, c]);
+        }
+
+        public int BombRadius => bombRadius;
+
+        // (row, column) 주변 radius칸 범위의 월드 경계야. 보드 가장자리에서는 안쪽까지만.
+        public void GetRangeBounds(int row, int column, int radius, out Vector2 min, out Vector2 max)
+        {
+            float left = boardCenter.x - boardSize.x * 0.5f;
+            float top = boardCenter.y + boardSize.y * 0.5f;
+            int rowMin = Mathf.Max(0, row - radius), rowMax = Mathf.Min(rows - 1, row + radius);
+            int columnMin = Mathf.Max(0, column - radius), columnMax = Mathf.Min(columns - 1, column + radius);
+            min = new Vector2(left + columnMin * cellSize.x, top - (rowMax + 1) * cellSize.y);
+            max = new Vector2(left + (columnMax + 1) * cellSize.x, top - rowMin * cellSize.y);
+        }
+
+        // 상점의 "벽돌 속성 변경"이야. 보드에 있는 모든 벽돌을 target 속성으로 바꿔.
+        public void ChangeAllBrickElements(ElementType target)
+        {
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < columns; c++)
+                    if (cells[r, c] != null)
+                        cells[r, c].SetElement(target);
+        }
+
+        // 폭탄 기본 데미지 = 턴 ÷ divisor(올림). 최소 1이야.
+        public int BombDamage(int divisor) => Mathf.Max(1, Mathf.CeilToInt(TurnNumber / (float)Mathf.Max(1, divisor)));
+
+        // 아이템 칸의 아이템을 써. 공이 날아가는 중에만 쓸 수 있어.
+        public bool UseHeldItem()
+        {
+            if (!initialized || IsGameOver || Items.IsEmpty || !launcher.IsTurnActive || launcher.FlyingBallCount == 0)
+                return false;
+            bool used = false;
+            switch (Items.Held)
+            {
+                case ItemType.Bomb:
+                    used = bomb.Detonate(bombRadius, bombDamageDivisor, bombHitStopTime, bombHitStopScale);
+                    break;
+            }
+            if (used)
+                Items.Take();
+            return used;
+        }
 
         public Vector3 GetCellCenter(int row, int column)
         {
@@ -296,6 +377,10 @@ namespace ElementalBreaker
             baseHealth = Mathf.Max(1, baseHealth);
             healthPerTurn = Mathf.Max(0, healthPerTurn);
             descentDuration = Mathf.Max(0f, descentDuration);
+            bombRadius = Mathf.Max(0, bombRadius);
+            bombDamageDivisor = Mathf.Max(1, bombDamageDivisor);
+            bombHitStopTime = Mathf.Max(0f, bombHitStopTime);
+            bombHitStopScale = Mathf.Clamp01(bombHitStopScale);
         }
 
         private void OnValidate()

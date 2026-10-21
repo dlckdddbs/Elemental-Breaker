@@ -1,3 +1,5 @@
+using DG.Tweening;
+using DG.Tweening.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,8 +16,13 @@ namespace ElementalBreaker
         private const float IconGap = 8f;
         private const float NextGap = 6f;
         private const float AcquiredGap = 6f;
-        private const float PopTime = 0.18f;
-        private const float PopScale = 0.25f;
+        // 값이 바뀔 때 톡 튀는 시간과 크기야. 튕김 횟수가 적을수록 한 번 "톡" 하고 끝나.
+        private const float PopTime = 0.25f;
+        private const float PopScale = 0.22f;
+        private const int PopVibrato = 6;
+        private const float PopElasticity = 0.5f;
+        // 골드가 늘면 숫자가 이 시간 동안 촤라락 올라가.
+        private const float GoldCountTime = 0.35f;
 
         [SerializeField] private BallLauncher launcher;
         [SerializeField] private BrickBoard board;
@@ -42,9 +49,17 @@ namespace ElementalBreaker
         private bool elementShown;
         private ElementType shownElement;
         private ElementType? shownNext;
-        private float goldPop = -1f;
-        private float elementPop = -1f;
-        private float acquiredPop = -1f;
+        // 화면에 보이는 골드야. 실제 골드를 향해 올라가.
+        private int goldDisplay;
+        // 숫자 트윈에 넘길 함수야. 한 번만 만들어서 골드가 바뀔 때마다 새로 할당하지 않아.
+        private DOGetter<int> goldGetter;
+        private DOSetter<int> goldSetter;
+
+        private void Awake()
+        {
+            goldGetter = () => goldDisplay;
+            goldSetter = SetGoldDisplay;
+        }
 
         private void LateUpdate()
         {
@@ -54,10 +69,19 @@ namespace ElementalBreaker
             RefreshElement();
             RefreshGold();
             RefreshBalls();
-            float dt = Time.unscaledDeltaTime;
-            Pop(ref goldPop, goldLabel != null ? goldLabel.rectTransform : null, dt);
-            Pop(ref elementPop, elementGroup, dt);
-            Pop(ref acquiredPop, acquiredBadge, dt);
+        }
+
+        private void OnDisable()
+        {
+            if (goldLabel != null)
+            {
+                DOTween.Kill(goldLabel, true);
+                goldLabel.rectTransform.DOKill(true);
+            }
+            if (elementGroup != null)
+                elementGroup.DOKill(true);
+            if (acquiredBadge != null)
+                acquiredBadge.DOKill(true);
         }
 
         private void RefreshTurn()
@@ -95,7 +119,7 @@ namespace ElementalBreaker
             }
             LayoutElement(hasNext);
             if (popNow)
-                elementPop = 0f;
+                Pop(elementGroup);
         }
 
         private void LayoutElement(bool hasNext)
@@ -116,11 +140,27 @@ namespace ElementalBreaker
             int gold = board.Gold.Amount;
             if (gold == shownGold)
                 return;
-            if (shownGold >= 0 && gold > shownGold)
-                goldPop = 0f;
+            bool gained = shownGold >= 0 && gold > shownGold;
             shownGold = gold;
-            if (goldLabel != null)
-                goldLabel.SetText("{0}", gold);
+            if (goldLabel == null)
+                return;
+            DOTween.Kill(goldLabel);
+            if (!gained)
+            {
+                // 처음 보여 줄 때와 골드를 쓸 때는 바로 바꿔.
+                SetGoldDisplay(gold);
+                return;
+            }
+            // 연달아 벌면 보이는 숫자에서 이어서 올라가.
+            DOTween.To(goldGetter, goldSetter, gold, GoldCountTime).SetEase(Ease.OutQuad)
+                .SetTarget(goldLabel).SetUpdate(true);
+            Pop(goldLabel.rectTransform);
+        }
+
+        private void SetGoldDisplay(int value)
+        {
+            goldDisplay = value;
+            goldLabel.SetText("{0}", value);
         }
 
         private void RefreshBalls()
@@ -129,8 +169,7 @@ namespace ElementalBreaker
             int acquired = launcher.AcquiredBallCount;
             if (balls == shownBalls && acquired == shownAcquired)
                 return;
-            if (shownAcquired >= 0 && acquired > shownAcquired)
-                acquiredPop = 0f;
+            bool popAcquired = shownAcquired >= 0 && acquired > shownAcquired;
             shownBalls = balls;
             shownAcquired = acquired;
             if (ballLabel != null)
@@ -144,22 +183,18 @@ namespace ElementalBreaker
             acquiredLabel.SetText("+{0}", acquired);
             float x = ballLabel.rectTransform.anchoredPosition.x + ballLabel.preferredWidth + AcquiredGap;
             acquiredBadge.anchoredPosition = new Vector2(x, acquiredBadge.anchoredPosition.y);
+            if (popAcquired)
+                Pop(acquiredBadge);
         }
 
-        private static void Pop(ref float time, RectTransform target, float dt)
+        private static void Pop(RectTransform target)
         {
-            if (time < 0f || target == null)
+            // 이미 튀는 중이면 끝까지 두어서, 벽돌을 연달아 깨도 "톡, 톡" 박자가 살아 있게 해.
+            if (target == null || DOTween.IsTweening(target))
                 return;
-            time += dt;
-            float k = time / PopTime;
-            if (k >= 1f)
-            {
-                time = -1f;
-                target.localScale = Vector3.one;
-                return;
-            }
-            float scale = 1f + PopScale * Mathf.Sin(k * Mathf.PI);
-            target.localScale = new Vector3(scale, scale, 1f);
+            target.localScale = Vector3.one;
+            // 히트 스톱으로 게임이 느려져도 HUD는 같은 빠르기로 움직이게 실제 시간을 써.
+            target.DOPunchScale(new Vector3(PopScale, PopScale, 0f), PopTime, PopVibrato, PopElasticity).SetUpdate(true);
         }
     }
 }
