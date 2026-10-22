@@ -226,7 +226,7 @@ namespace ElementalBreaker
             if (bombCard.iconOverlay != null)
                 bombCard.iconOverlay.enabled = false;
             SetCard(bombCard, BombPrice, slotFull ? "아이템 칸이 차 있어요" : gold < BombPrice ? "골드가 부족해요" : null,
-                "맨 앞 공 주변 3x3 폭발");
+                "3x3 폭발, 십자 2배");
             SetCard(iceCard, IcePrice, "곧 추가돼요", "이번 턴 벽돌이 안 내려옴");
 
             // 벽돌 속성 변경: 지금 공에 약한 벽돌 그림을 보여 줘. 일반 공이면 쓸 수 없어.

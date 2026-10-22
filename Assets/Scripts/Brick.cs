@@ -20,6 +20,13 @@ namespace ElementalBreaker
         // 폭탄에 맞으면 완전히 하얗게 번쩍이고, 실제 시간으로 이만큼만 유지해.
         // 히트 스톱이 길어도 숫자와 속성이 금방 다시 보여.
         private const float BombFlashTime = 0.05f;
+        // 폭탄이 터질 때 범위 안 벽돌이 폭발 중심 반대쪽으로 살짝 밀렸다 돌아와. 범위 밖 벽돌은 가만히 있어서 범위가 보여.
+        // 게임 시간으로 움직여서 히트 스톱이 풀린 뒤에 밀려.
+        private const float ShoveTime = 0.16f;
+        private const float ShoveDistance = 0.07f;
+        // 가운데 십자 벽돌은 더 세게 맞아서 더 오래 하얘지고 더 멀리 밀려. 따로 설명하지 않아도 센 칸이 보여.
+        private const float StrongFlashTime = 0.08f;
+        private const float StrongShoveDistance = 0.11f;
 
         private BoxCollider2D hitbox;
         private SpriteRenderer visual;
@@ -33,6 +40,11 @@ namespace ElementalBreaker
         private float hitTime = -1f;
         private float hitFlash = HitFlash;
         private float bombFlashStart = -1f;
+        private float bombFlashTime = BombFlashTime;
+        private Vector3 cellPosition;
+        private Vector2 shoveDirection;
+        private float shoveDistance = ShoveDistance;
+        private float shoveTime = -1f;
         public int Row { get; private set; } = -1;
         public int Column { get; private set; } = -1;
         public int Health { get; private set; }
@@ -148,7 +160,11 @@ namespace ElementalBreaker
 
         public void SetRow(int row) => Row = row;
 
-        public void SetCellPosition(Vector3 center) => transform.position = center;
+        public void SetCellPosition(Vector3 center)
+        {
+            cellPosition = center;
+            transform.position = center;
+        }
 
         public void Despawn()
         {
@@ -166,9 +182,13 @@ namespace ElementalBreaker
             ApplyDamage(damage, ElementRules.HasAdvantage(attacker, Element), attacker, point, false);
 
         // 폭탄에 맞았을 때야. 큰 폭발 하나가 대표하니까, 벽돌마다 버스트를 또 터뜨리지 않아.
-        // 깨지면 벽돌 조각이 폭발 중심(blastCenter)에서 멀어지는 쪽으로 튀어.
-        public void TakeBombHit(int damage, ElementType attacker, Vector2 blastCenter) =>
+        // 깨지면 벽돌 조각이 폭발 중심(blastCenter)에서 멀어지는 쪽으로 튀어. strong은 가운데 십자 벽돌이야.
+        public void TakeBombHit(int damage, ElementType attacker, Vector2 blastCenter, bool strong)
+        {
+            bombFlashTime = strong ? StrongFlashTime : BombFlashTime;
+            shoveDistance = strong ? StrongShoveDistance : ShoveDistance;
             ApplyDamage(damage, ElementRules.HasAdvantage(attacker, Element), attacker, blastCenter, true);
+        }
 
         // point는 공이면 맞은 자리, 폭탄이면 폭발 중심이야.
         private void ApplyDamage(int damage, bool advantage, ElementType attacker, Vector2 point, bool fromBomb = false)
@@ -186,6 +206,13 @@ namespace ElementalBreaker
                 {
                     hitFlash = 0f;
                     bombFlashStart = Time.unscaledTime;
+                    // 가운데 칸은 밀 방향이 없어서 제자리에 있어.
+                    Vector2 away = (Vector2)cellPosition - point;
+                    if (away.sqrMagnitude > 0.0001f)
+                    {
+                        shoveDirection = away.normalized;
+                        shoveTime = 0f;
+                    }
                     return;
                 }
                 hitFlash = HitFlash;
@@ -209,14 +236,28 @@ namespace ElementalBreaker
 
         private void Update()
         {
-            if (hitTime < 0f && bombFlashStart < 0f)
+            if (hitTime < 0f && bombFlashStart < 0f && shoveTime < 0f)
                 return;
+
+            if (shoveTime >= 0f)
+            {
+                shoveTime += Time.deltaTime;
+                float k = shoveTime / ShoveTime;
+                Vector2 offset = Vector2.zero;
+                if (k >= 1f)
+                    shoveTime = -1f;
+                else
+                    offset = shoveDirection * (shoveDistance * Mathf.Sin(k * Mathf.PI));
+                // 콜라이더는 제자리에 두고 보이는 것만 밀어서 공의 충돌에는 영향이 없어.
+                transform.position = cellPosition + (Vector3)offset;
+                hitbox.offset = -offset;
+            }
 
             float flash = 0f;
             if (bombFlashStart >= 0f)
             {
                 // 폭탄 번쩍임은 히트 스톱과 상관없이 실제 시간으로 짧게 끝나.
-                flash = 1f - (Time.unscaledTime - bombFlashStart) / BombFlashTime;
+                flash = 1f - (Time.unscaledTime - bombFlashStart) / bombFlashTime;
                 if (flash <= 0f)
                 {
                     flash = 0f;
@@ -251,6 +292,7 @@ namespace ElementalBreaker
         {
             hitTime = -1f;
             bombFlashStart = -1f;
+            shoveTime = -1f;
             visual.size = baseSize;
             visual.color = baseColor;
             if (healthLabel != null)

@@ -25,10 +25,11 @@ namespace ElementalBreaker
         private const float AccentStrength = 0.75f;
         private const float ChunkGravity = 8.5f;
         private const float CoinSize = 0.22f;
-        // 폭탄으로 깬 벽돌은 큰 벽돌 조각 4개가 폭발 중심 반대쪽으로 튀어. 크기는 벽돌 너비 대비야.
+        // 폭탄으로 깬 벽돌은 벽돌 모양 조각 4개가 폭발 중심 반대쪽으로 튀어. 너비는 벽돌 너비 대비이고, 높이는 너비의 BombChunkAspect배야.
         private const int BombChunkCount = 4;
-        private const float BombChunkMinSize = 0.55f;
-        private const float BombChunkMaxSize = 0.68f;
+        private const float BombChunkMinSize = 0.38f;
+        private const float BombChunkMaxSize = 0.47f;
+        private const float BombChunkAspect = 0.85f;
         private const float BombChunkMinLife = 0.55f;
         private const float BombChunkMaxLife = 0.7f;
         private const float BombChunkGravity = 11f;
@@ -57,7 +58,7 @@ namespace ElementalBreaker
             // 폭탄 조각만 쓰는 값이야. 조각마다 시작 자리, 처음 각도, 크기, 수명이 달라.
             public readonly Vector2[] ChunkStarts = new Vector2[ChunkCount];
             public readonly float[] ChunkAngles = new float[ChunkCount];
-            public readonly float[] ChunkScales = new float[ChunkCount];
+            public readonly float[] ChunkWidths = new float[ChunkCount];
             public readonly float[] ChunkLives = new float[ChunkCount];
             public readonly SpriteRenderer[] Accents = new SpriteRenderer[AccentCount];
             public readonly Vector2[] AccentVelocities = new Vector2[AccentCount];
@@ -84,9 +85,9 @@ namespace ElementalBreaker
         private readonly BurstSlot[] burstSlots = new BurstSlot[BurstSlotCount];
         // 공 속성별 버스트 이미지야. 일반 공은 상성이 없어서 null이야.
         private readonly Sprite[] bursts = new Sprite[4];
-        private Sprite brick, puff, coin, ember, drop, leaf, sparkle, bombChunk;
+        private Sprite brick, puff, coin, ember, drop, leaf, sparkle;
         private Vector2 brickSpriteSize = Vector2.one;
-        private float puffWidth = 1f, coinWidth = 1f, bombChunkWidth = 1f;
+        private float puffWidth = 1f, coinWidth = 1f;
 
         public void Initialize(Material material, int sortingLayerId, int baseOrder)
         {
@@ -97,10 +98,6 @@ namespace ElementalBreaker
             drop = ElementRules.LoadEffectSprite("drop");
             leaf = ElementRules.LoadEffectSprite("leaf");
             sparkle = ElementRules.LoadEffectSprite("sparkle");
-            // 회색 벽돌 조각이라 벽돌 색을 입혀 써. 없으면 벽돌 바탕을 작게 잘라 쓰던 예전 조각으로 대신해.
-            bombChunk = ElementRules.LoadEffectSprite("bomb_chunk");
-            if (bombChunk != null)
-                bombChunkWidth = bombChunk.rect.width / bombChunk.pixelsPerUnit;
             bursts[(int)ElementType.Fire] = ElementRules.LoadEffectSprite("burst_fire");
             bursts[(int)ElementType.Water] = ElementRules.LoadEffectSprite("burst_water");
             bursts[(int)ElementType.Grass] = ElementRules.LoadEffectSprite("burst_grass");
@@ -215,7 +212,7 @@ namespace ElementalBreaker
                 slot.Coins[c].enabled = false;
             }
 
-            if (plain && bombChunk != null)
+            if (plain)
                 SetupBombChunks(slot, position, blastCenter);
             else
                 for (int i = 0; i < ChunkCount; i++)
@@ -254,9 +251,10 @@ namespace ElementalBreaker
                 slot.ChunkVelocities[i] = new Vector2(Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed + 2.2f);
                 slot.ChunkAngles[i] = Random.Range(0f, 360f);
                 slot.ChunkSpins[i] = (Random.value < 0.5f ? -1f : 1f) * Random.Range(290f, 690f);
-                slot.ChunkScales[i] = slot.BrickSize.x * Random.Range(BombChunkMinSize, BombChunkMaxSize) / bombChunkWidth;
+                slot.ChunkWidths[i] = slot.BrickSize.x * Random.Range(BombChunkMinSize, BombChunkMaxSize);
                 slot.ChunkLives[i] = Random.Range(BombChunkMinLife, BombChunkMaxLife);
-                chunk.sprite = bombChunk;
+                // 게임 벽돌과 같은 평평한 모양이 벽돌 색 그대로 튀어서 그림체가 따로 놀지 않아.
+                chunk.sprite = brick;
                 chunk.color = slot.Tint;
             }
         }
@@ -341,7 +339,7 @@ namespace ElementalBreaker
         private void UpdateBreak(BreakSlot slot, float elapsed)
         {
             float chunkStart = slot.Advantage ? AdvantageChunkDelay : PopTime;
-            bool bombChunks = slot.Plain && bombChunk != null;
+            bool bombChunks = slot.Plain;
             if (elapsed >= chunkStart + (bombChunks ? BombChunkMaxLife : ChunkLife))
             {
                 slot.Active = false;
@@ -409,7 +407,7 @@ namespace ElementalBreaker
             UpdateCoin(slot, t);
         }
 
-        private static void UpdateBombChunks(BreakSlot slot, float life)
+        private void UpdateBombChunks(BreakSlot slot, float life)
         {
             for (int i = 0; i < BombChunkCount; i++)
             {
@@ -422,11 +420,11 @@ namespace ElementalBreaker
                     continue;
                 }
                 chunk.enabled = true;
-                float scale = slot.ChunkScales[i] * (1f - 0.25f * k);
+                float width = slot.ChunkWidths[i] * (1f - 0.25f * k);
                 chunk.transform.localPosition = slot.ChunkStarts[i] +
                     EffectMath.Drift(slot.ChunkVelocities[i], BombChunkGravity, BombChunkDrag, life);
                 chunk.transform.localRotation = Quaternion.Euler(0f, 0f, slot.ChunkAngles[i] + slot.ChunkSpins[i] * life);
-                chunk.transform.localScale = new Vector3(scale, scale, 1f);
+                chunk.transform.localScale = new Vector3(width / brickSpriteSize.x, width * BombChunkAspect / brickSpriteSize.y, 1f);
                 Color color = slot.Tint;
                 color.a = k < 0.65f ? 1f : 1f - (k - 0.65f) / 0.35f;
                 chunk.color = color;

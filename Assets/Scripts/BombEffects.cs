@@ -2,59 +2,51 @@ using UnityEngine;
 
 namespace ElementalBreaker
 {
-    // 속성 폭탄 연출이야. 폭탄을 들고 있으면 맨 앞 공의 3x3 범위 모서리를 옅게 보여 줘.
-    // 누르면 "쾅 → 와르르" 순서로 터져. 히트 스톱 동안은 멈춘 장면(가운데 작은 별, 범위 번쩍임, 테두리 빛, 모서리)을 보여 주고,
-    // 멈춤이 풀리는 순간 폭발 그림(8프레임)이 재생되면서 빛줄기, 불꽃, 속성 파편이 튀고 화면이 흔들려.
-    // 깨진 벽돌 조각과 코인은 BrickEffects가 맡아. 히트 스톱 중에도 움직여야 해서 실제 시간을 써.
+    // 속성 폭탄 연출이야. 범위 표시 없이 폭발 자체로 범위를 보여 줘.
+    // 누르면 "쾅 → 와르르" 순서로 터져. 히트 스톱 동안은 가운데 작은 별만 보이는 멈춘 장면이고,
+    // 멈춤이 풀리는 순간 폭발 그림(8프레임)이 범위까지 빠르게 퍼지면서 끊어진 원형 충격파, 빛줄기, 불꽃, 속성 파편이 튀고 화면이 살짝 흔들려.
+    // 폭발 그림은 가운데가 빈 고리 모양으로 조금 더 남아서 뒤따르는 공이 보여.
+    // 범위 안 벽돌의 반응(하얘짐, 밀림)과 깨진 벽돌 조각, 코인은 Brick과 BrickEffects가 맡아. 히트 스톱 중에도 움직여야 해서 실제 시간을 써.
     public sealed class BombEffects : MonoBehaviour
     {
-        // 폭탄을 들고 있을 때 범위 모서리의 투명도야.
-        private const float PreviewAlpha = 0.45f;
-        // 맨 앞 공을 따라 칸을 옮길 때 미끄러지는 빠르기야. 클수록 바로 붙어.
-        private const float FollowSharpness = 18f;
-        // 모서리가 범위 바깥에서 조여드는 시간과 처음 벌어진 거리야. 멈춤이 풀린 뒤 잠깐 머물다 흐려져.
-        private const float LockTime = 0.08f;
-        private const float LockInflate = 0.15f;
-        private const float CornerHoldTime = 0.12f;
-        private const float CornerFadeTime = 0.12f;
-        // 누르는 순간 3x3 전체가 속성색으로 번쩍이는 시간과 밝기야. 짧아야 벽돌 숫자가 금방 다시 보여.
-        private const float RangeFlashTime = 0.06f;
-        private const float RangeFlashAlpha = 0.6f;
-        private const float RangeInnerAlpha = 0.4f;
-        // 번쩍임이 끝나도 범위가 보이게 옅은 색과 테두리 빛이 남아. 멈춤이 풀린 뒤 EdgeHoldTime 동안 유지하고 EdgeFadeTime 동안 흐려져.
-        private const float RangeTintAlpha = 0.12f;
-        private const float RangeEdgeAlpha = 0.9f;
-        private const float EdgeHoldTime = 0.12f;
-        private const float EdgeFadeTime = 0.18f;
-        // 범위 빛/테두리 이미지(96px)에서 둥근 사각형이 가장자리로부터 들어온 거리(픽셀)야.
-        private const float RangeSpriteInset = 24f;
-        // 폭발 그림 한 칸이 화면에서 차지하는 크기(3x3 범위 너비 대비)야. 가장 큰 프레임이 범위의 약 1.2배가 돼.
+        // 폭발 그림 한 칸이 화면에서 차지하는 크기(3x3 범위 가로세로 평균 대비)야. 가장 큰 프레임이 그 평균의 약 1.2배가 돼.
         private const float BlastSize = 1.32f;
         // 멈춘 장면의 작은 별 크기 배율이야.
         private const float ImpactStarScale = 1.5f;
-        // 멈춤이 풀린 뒤 1~7번 프레임이 각각 보이는 시간(초)이야. 다 더하면 약 0.36초야.
-        private static readonly float[] FrameTimes = { 0.035f, 0.05f, 0.05f, 0.05f, 0.055f, 0.06f, 0.06f };
-        // 재생하는 동안 폭발 그림이 조금씩 커지는 비율이야.
-        private const float BlastGrow = 0.06f;
-        // 폭발 그림 아래 빛이 남는 시간이야.
-        private const float GlowTime = 0.22f;
+        // 멈춤이 풀린 뒤 1~7번 프레임이 각각 보이는 시간(초)이야.
+        // 가장 밝은 1~2번은 뒤따르는 공을 가리지 않게 짧게 두고, 가운데는 비고 외곽이 두꺼운 3~5번을 길게 붙잡아
+        // 폭발의 무게감을 남겨. 6~7번에서 흩어지며 사라져.
+        private static readonly float[] FrameTimes = { 0.035f, 0.05f, 0.13f, 0.13f, 0.1f, 0.06f, 0.06f };
+        // 재생하는 동안 고리 에너지가 바깥으로 계속 퍼지는 정도야.
+        private const float BlastGrow = 0.15f;
+        // 폭발 그림 아래 속성색 빛이야. 흰빛으로 덮지 않게 약하게 하고, 고리 단계에 들어가면 빨리 빠져서 가운데가 비어 보여.
+        private const float GlowTime = 0.15f;
+        private const float GlowLightAlpha = 0.55f;
+        private const float GlowMainAlpha = 0.45f;
+        // 원형 충격파: 끊어진 고리가 범위 크기(가로세로 평균)의 0.3배 반지름에서 0.72배까지 퍼지며 범위 모서리쯤에서 사라져.
+        // 폭발 본체가 범위를 충분히 보여 주니까, 충격파는 옅게 지나가는 정도로만 둬.
+        private const float RingTime = 0.26f;
+        private const float RingStartRadius = 0.3f;
+        private const float RingEndRadius = 0.72f;
+        private const float RingAlpha = 0.7f;
+        // 고리 이미지(128px)에서 고리 지름이 차지하는 비율이야.
+        private const float RingContentRatio = 0.94f;
         // 빛줄기: 범위 테두리 안에서 끝나게 길이를 제한해.
-        private const int RayCount = 8;
+        private const int RayCount = 6;
         private const float RayGrowTime = 0.08f;
         private const float RayTime = 0.18f;
+        private const float RayAlpha = 0.75f;
         private const int SparkCount = 10;
-        private const int PartCount = 8;
-        // 화면 섬광은 누르는 순간 켜지고 빠르게 꺼져.
-        private const float ScreenFlashAlpha = 0.1f;
+        private const int PartCount = 5;
+        // 화면 섬광은 누르는 순간 아주 옅게 켜지고 빠르게 꺼져.
+        private const float ScreenFlashAlpha = 0.06f;
         private const float ScreenFlashTime = 0.08f;
         // 화면 섬광 지름(화면 긴 변 대비)이야. 폭발이 가장자리에 있어도 반대쪽까지 빛이 닿아.
         private const float ScreenFlashSpan = 2.4f;
-        // 화면 흔들림: 처음이 가장 세고 점점 약해져. 세기는 월드 거리(벽돌 한 칸이 약 0.66)야.
-        private const float ShakeTime = 0.24f;
-        private const float ShakeStrength = 0.14f;
-        private const int ShakeVibrato = 18;
-        // 프레임이 끊겨도 미리보기 모서리가 한 번에 멀리 튀지 않게 해.
-        private const float MaxStep = 0.05f;
+        // 화면 흔들림: 작고 빠르게 떨려서 폭발이 한쪽으로 흘러가 보이지 않아. 세기는 월드 거리(벽돌 한 칸이 약 0.66)야.
+        private const float ShakeTime = 0.18f;
+        private const float ShakeStrength = 0.07f;
+        private const int ShakeVibrato = 30;
         private const string AdditiveShaderPath = "Shaders/SpriteAdditive";
 
         // 폭발 빛 색이야. 일반, 불, 물, 풀 순서. light는 안쪽 밝은 색, main은 바깥 속성색이야.
@@ -67,6 +59,12 @@ namespace ElementalBreaker
         {
             new Color32(0xBF, 0xD0, 0xEE, 0xFF), new Color32(0xFF, 0x4D, 0x1A, 0xFF),
             new Color32(0x1F, 0x8B, 0xFF, 0xFF), new Color32(0x3C, 0xCB, 0x2E, 0xFF)
+        };
+        // 원형 충격파 색이야. 흰색, 주황, 청록, 연두.
+        private static readonly Color32[] RingColors =
+        {
+            new Color32(0xE6, 0xEE, 0xFF, 0xFF), new Color32(0xFF, 0x8A, 0x2A, 0xFF),
+            new Color32(0x4F, 0xE0, 0xFF, 0xFF), new Color32(0x9C, 0xFF, 0x3A, 0xFF)
         };
 
         private struct PartStyle
@@ -93,10 +91,10 @@ namespace ElementalBreaker
         // 속성 파편이야. 일반, 불, 물, 풀 순서이고 개수 합은 PartCount야.
         private static readonly PartStyle[][] PartStyles =
         {
-            new[] { new PartStyle("bomb_star", 6, 0.28f, float.NaN, true), new PartStyle("bomb_star_blue", 2, 0.2f, float.NaN, true) },
-            new[] { new PartStyle("bomb_flame", 4, 0.27f, -135f), new PartStyle("bomb_ember", 4, 0.2f, -135f) },
-            new[] { new PartStyle("bomb_drop", 3, 0.17f, -90f), new PartStyle("bomb_splash", 3, 0.22f, 45f), new PartStyle("bomb_splash_small", 2, 0.13f, 90f) },
-            new[] { new PartStyle("bomb_leaf_small", 4, 0.22f, float.NaN), new PartStyle("bomb_leaf", 2, 0.26f, float.NaN), new PartStyle("bomb_shard_grass", 2, 0.2f, 45f) }
+            new[] { new PartStyle("bomb_star", 4, 0.28f, float.NaN, true), new PartStyle("bomb_star_blue", 1, 0.2f, float.NaN, true) },
+            new[] { new PartStyle("bomb_flame", 3, 0.27f, -135f), new PartStyle("bomb_ember", 2, 0.2f, -135f) },
+            new[] { new PartStyle("bomb_drop", 2, 0.17f, -90f), new PartStyle("bomb_splash", 2, 0.22f, 45f), new PartStyle("bomb_splash_small", 1, 0.13f, 90f) },
+            new[] { new PartStyle("bomb_leaf_small", 3, 0.22f, float.NaN), new PartStyle("bomb_leaf", 1, 0.26f, float.NaN), new PartStyle("bomb_shard_grass", 1, 0.2f, 45f) }
         };
         // 속성 파편의 중력(x)과 공기 저항(y)이야. 불씨는 살짝 떠오르고 물방울은 떨어져.
         private static readonly Vector2[] PartPhysics =
@@ -125,11 +123,9 @@ namespace ElementalBreaker
         }
 
         private BrickBoard board;
-        private BallLauncher launcher;
         private Material additive;
         private bool ownsAdditive;
-        private readonly SpriteRenderer[] corners = new SpriteRenderer[4];
-        private SpriteRenderer rangeFill, rangeInner, rangeEdge, glowMain, glowLight, blast, screenFlash;
+        private SpriteRenderer glowMain, glowLight, blast, ring, screenFlash;
         private readonly SpriteRenderer[] rayRenderers = new SpriteRenderer[RayCount];
         private readonly SpriteRenderer[] sparkRenderers = new SpriteRenderer[SparkCount];
         private readonly SpriteRenderer[] partRenderers = new SpriteRenderer[PartCount];
@@ -138,23 +134,21 @@ namespace ElementalBreaker
         private readonly Part[] parts = new Part[PartCount];
         private readonly Sprite[][] partSprites = new Sprite[4][];
         private Sprite[] frames;
-        private float frameTotal, rayLength = 1f, rayWidth = 1f, glowWorldSize = 1f, rangeInset;
+        private float frameTotal, rayLength = 1f, rayWidth = 1f, glowWorldSize = 1f, ringWorldSize = 1f;
 
-        private bool previewShown;
-        private Vector2 previewMin, previewMax;
         private float detonateTime = -1f;
         private float impactTime;
         private bool released;
         private int partUsed;
-        private Vector2 lockMin, lockMax, blastCenter;
+        private float ringAngle;
+        private Vector2 blastCenter;
         private ElementType blastElement;
-        private float nominalWidth = 1f, blastScale = 1f;
-        private Color lightColor, mainColor;
+        private float nominalSize = 1f, blastScale = 1f;
+        private Color lightColor, mainColor, ringColor;
 
-        public void Initialize(BrickBoard owner, BallLauncher ballLauncher, Material material, int sortingLayerId, int baseOrder)
+        public void Initialize(BrickBoard owner, Material material, int sortingLayerId, int baseOrder)
         {
             board = owner;
-            launcher = ballLauncher;
             // 빛은 더하기 합성으로 그려서 어두운 배경에서 빛나 보여. 셰이더가 없으면 일반 재질로 대신해.
             Shader shader = Resources.Load<Shader>(AdditiveShaderPath);
             ownsAdditive = shader != null;
@@ -162,21 +156,17 @@ namespace ElementalBreaker
             if (!ownsAdditive)
                 Debug.LogWarning("BombEffects: 더하기 셰이더를 찾지 못해서 일반 재질로 그려. " + AdditiveShaderPath, this);
 
-            // 그리는 순서(뒤→앞): 범위 빛·폭발 아래 빛(+3) 폭발 그림(+4) 벽돌 조각(+5, BrickEffects)·빛줄기·불꽃(+5)
-            //                    속성 파편(+6) 모서리(+8) 화면 섬광(+10)
+            // 그리는 순서(뒤→앞): 폭발 아래 빛(+3) 폭발 그림(+4) 벽돌 조각(+5, BrickEffects)·충격파·빛줄기·불꽃(+5)
+            //                    속성 파편(+6) 화면 섬광(+10)
             Sprite glow = ElementRules.LoadEffectSprite("puff");
-            Sprite rangeGlow = ElementRules.LoadEffectSprite("range_glow");
-            Sprite edge = ElementRules.LoadEffectSprite("range_edge");
             Sprite ray = ElementRules.LoadEffectSprite("ray");
-            Sprite corner = ElementRules.LoadEffectSprite("range_corner");
-            rangeFill = CreateSliced("Bomb Range Fill", rangeGlow, sortingLayerId, baseOrder + 3);
-            rangeInner = CreateSliced("Bomb Range Inner", rangeGlow, sortingLayerId, baseOrder + 3);
-            rangeEdge = CreateSliced("Bomb Range Edge", edge, sortingLayerId, baseOrder + 3);
             glowMain = CreateRenderer("Bomb Glow", additive, sortingLayerId, baseOrder + 3);
             glowMain.sprite = glow;
             glowLight = CreateRenderer("Bomb Glow Core", additive, sortingLayerId, baseOrder + 3);
             glowLight.sprite = glow;
             blast = CreateRenderer("Bomb Blast", material, sortingLayerId, baseOrder + 4);
+            ring = CreateRenderer("Bomb Shockwave", additive, sortingLayerId, baseOrder + 5);
+            ring.sprite = ElementRules.LoadEffectSprite("bomb_ring");
             for (int i = 0; i < RayCount; i++)
             {
                 rayRenderers[i] = CreateRenderer("Bomb Ray", additive, sortingLayerId, baseOrder + 5);
@@ -189,11 +179,6 @@ namespace ElementalBreaker
             }
             for (int i = 0; i < PartCount; i++)
                 partRenderers[i] = CreateRenderer("Bomb Particle", material, sortingLayerId, baseOrder + 6);
-            for (int i = 0; i < corners.Length; i++)
-            {
-                corners[i] = CreateRenderer("Range Corner", material, sortingLayerId, baseOrder + 8);
-                corners[i].sprite = corner;
-            }
             screenFlash = CreateRenderer("Bomb Screen Flash", material, sortingLayerId, baseOrder + 10);
             screenFlash.sprite = glow;
 
@@ -207,13 +192,13 @@ namespace ElementalBreaker
                 frameTotal += FrameTimes[i];
             if (glow != null)
                 glowWorldSize = SpriteWidth(glow);
+            if (ring.sprite != null)
+                ringWorldSize = SpriteWidth(ring.sprite);
             if (ray != null)
             {
                 rayLength = SpriteWidth(ray);
                 rayWidth = ray.rect.height / ray.pixelsPerUnit;
             }
-            if (edge != null)
-                rangeInset = RangeSpriteInset / edge.pixelsPerUnit;
             HideAll();
         }
 
@@ -227,27 +212,15 @@ namespace ElementalBreaker
             return renderer;
         }
 
-        private SpriteRenderer CreateSliced(string objectName, Sprite sprite, int layerId, int order)
-        {
-            SpriteRenderer renderer = CreateRenderer(objectName, additive, layerId, order);
-            renderer.sprite = sprite;
-            renderer.drawMode = SpriteDrawMode.Sliced;
-            return renderer;
-        }
-
         // 아틀라스에서 잘려 들어와도 원래 이미지 한 칸 크기로 재야 프레임마다 크기가 같아.
         private static float SpriteWidth(Sprite sprite) => sprite.rect.width / sprite.pixelsPerUnit;
 
         private void HideAll()
         {
-            for (int i = 0; i < corners.Length; i++)
-                corners[i].enabled = false;
-            rangeFill.enabled = false;
-            rangeInner.enabled = false;
-            rangeEdge.enabled = false;
             glowMain.enabled = false;
             glowLight.enabled = false;
             blast.enabled = false;
+            ring.enabled = false;
             screenFlash.enabled = false;
             for (int i = 0; i < RayCount; i++)
                 rayRenderers[i].enabled = false;
@@ -257,43 +230,38 @@ namespace ElementalBreaker
                 partRenderers[i].enabled = false;
         }
 
-        // min, max는 범위의 월드 경계야. impactDuration은 히트 스톱 시간이고, 그동안 멈춘 장면을 보여 준 뒤 터져.
-        public void PlayDetonate(Vector2 min, Vector2 max, ElementType element, float impactDuration)
+        // center는 누른 순간 맨 앞 공의 자리야. 폭발은 그 자리에서 터지고 끝까지 움직이지 않아.
+        // impactDuration은 히트 스톱 시간이고, 그동안 멈춘 장면을 보여 준 뒤 터져.
+        public void PlayDetonate(Vector2 center, ElementType element, float impactDuration)
         {
             HideAll();
             detonateTime = Time.unscaledTime;
             impactTime = Mathf.Max(0f, impactDuration);
             released = false;
-            previewShown = false;
-            lockMin = min;
-            lockMax = max;
-            blastCenter = (min + max) * 0.5f;
+            blastCenter = center;
             blastElement = element;
             lightColor = LightColors[(int)element];
             mainColor = MainColors[(int)element];
+            ringColor = RingColors[(int)element];
+            ringAngle = Random.Range(0f, 360f);
             frames = ElementRules.GetBlastFrames(element);
 
-            // 폭발 크기는 3x3 범위 너비가 기준이야. 보드 가장자리에서 범위가 잘려도 폭발 크기는 같아.
-            nominalWidth = board.CellSize.x * (board.BombRadius * 2 + 1);
-            blastScale = frames[0] != null ? nominalWidth * BlastSize / SpriteWidth(frames[0]) : 1f;
-            Vector3 center = WorldPoint(blastCenter);
-            Vector2 size = max - min;
-            // 테두리 빛은 범위 경계 바로 안쪽에 오고, 채움 빛은 경계 밖으로 조금 번져.
-            rangeEdge.size = size + Vector2.one * (rangeInset * 2f - 0.04f);
-            rangeFill.size = size + Vector2.one * (rangeInset * 2f + 0.12f);
-            rangeInner.size = size + Vector2.one * (rangeInset * 2f - 0.26f);
-            rangeFill.transform.position = center;
-            rangeInner.transform.position = center;
-            rangeEdge.transform.position = center;
-            blast.transform.position = center;
-            glowMain.transform.position = center;
-            glowLight.transform.position = center;
+            // 폭발 크기는 3x3 범위의 가로세로 평균이 기준이야. 칸이 가로로 넓어서 너비만 쓰면 위아래로 한 줄 가까이 넘쳐 보여.
+            // 보드 가장자리에서 범위가 잘려도 폭발 크기는 같아.
+            Vector2 rangeSize = board.CellSize * (board.BombRadius * 2 + 1);
+            nominalSize = (rangeSize.x + rangeSize.y) * 0.5f;
+            blastScale = frames[0] != null ? nominalSize * BlastSize / SpriteWidth(frames[0]) : 1f;
+            Vector3 position = WorldPoint(blastCenter);
+            blast.transform.position = position;
+            ring.transform.position = position;
+            glowMain.transform.position = position;
+            glowLight.transform.position = position;
 
             float flashScale = ScreenSpan() * ScreenFlashSpan / glowWorldSize;
-            screenFlash.transform.position = center;
+            screenFlash.transform.position = position;
             screenFlash.transform.localScale = new Vector3(flashScale, flashScale, 1f);
 
-            SetupRays(size);
+            SetupRays(rangeSize);
             SetupSparks();
             SetupParts();
             // 이번 프레임의 Update가 이미 지나갔어도 멈춘 장면이 한 프레임 늦지 않게 바로 그려.
@@ -304,18 +272,18 @@ namespace ElementalBreaker
 
         private void SetupRays(Vector2 rangeSize)
         {
-            float start = nominalWidth * 0.08f;
+            float start = nominalSize * 0.08f;
             for (int i = 0; i < RayCount; i++)
             {
-                float angle = (i / (float)RayCount) * Mathf.PI * 2f + Random.Range(-0.2f, 0.2f);
-                // 가운데에서 범위 테두리까지의 거리야. 빛줄기는 그 안에서 끝나.
+                float angle = (i / (float)RayCount) * Mathf.PI * 2f + Random.Range(-0.25f, 0.25f);
+                // 폭발 자리에서 3x3 크기 테두리까지의 거리야. 빛줄기는 그 안에서 끝나.
                 float edge = Mathf.Min(rangeSize.x * 0.5f / Mathf.Max(0.0001f, Mathf.Abs(Mathf.Cos(angle))),
                     rangeSize.y * 0.5f / Mathf.Max(0.0001f, Mathf.Abs(Mathf.Sin(angle))));
                 rays[i] = new LightRay
                 {
                     Angle = angle,
-                    Length = Mathf.Max(0.05f, edge * Random.Range(0.8f, 0.92f) - start),
-                    Width = Random.Range(0.09f, 0.14f)
+                    Length = Mathf.Max(0.05f, edge * Random.Range(0.75f, 0.87f) - start),
+                    Width = Random.Range(0.08f, 0.12f)
                 };
             }
         }
@@ -382,45 +350,12 @@ namespace ElementalBreaker
         private void Update()
         {
             if (detonateTime < 0f)
-            {
-                UpdatePreview(Mathf.Min(Time.unscaledDeltaTime, MaxStep));
                 return;
-            }
             if (!UpdateDetonate(Time.unscaledTime - detonateTime))
             {
                 detonateTime = -1f;
                 HideAll();
             }
-        }
-
-        private void UpdatePreview(float dt)
-        {
-            Ball front = board.Items.Held == ItemType.Bomb ? launcher.FrontBall : null;
-            if (front == null)
-            {
-                if (previewShown)
-                {
-                    previewShown = false;
-                    for (int i = 0; i < corners.Length; i++)
-                        corners[i].enabled = false;
-                }
-                return;
-            }
-            board.WorldToCell(front.transform.position, out int row, out int column);
-            board.GetRangeBounds(row, column, board.BombRadius, out Vector2 targetMin, out Vector2 targetMax);
-            if (!previewShown)
-            {
-                previewShown = true;
-                previewMin = targetMin;
-                previewMax = targetMax;
-            }
-            else
-            {
-                float k = 1f - Mathf.Exp(-FollowSharpness * dt);
-                previewMin = Vector2.Lerp(previewMin, targetMin, k);
-                previewMax = Vector2.Lerp(previewMax, targetMax, k);
-            }
-            PlaceCorners(previewMin, previewMax, PreviewAlpha, 1f);
         }
 
         // t는 누른 뒤 지난 실제 시간이야. 아직 보여 줄 게 남아 있으면 true야.
@@ -429,14 +364,14 @@ namespace ElementalBreaker
             if (!released && t >= impactTime)
                 Release();
             // 하나라도 남아 있으면 계속 그려. 모두 돌려야 해서 ||가 아니라 |를 써.
-            bool alive = UpdateCorners(t) | UpdateRange(t) | UpdateScreenFlash(t) | UpdateBlast(t);
+            bool alive = UpdateScreenFlash(t) | UpdateBlast(t);
             if (!released)
                 return true;
             float r = t - impactTime;
-            return alive | UpdateGlow(r) | UpdateRays(r) | UpdateSparks(r) | UpdateParts(r);
+            return alive | UpdateGlow(r) | UpdateRing(r) | UpdateRays(r) | UpdateSparks(r) | UpdateParts(r);
         }
 
-        // 멈춤이 풀리는 순간이야. 빛줄기, 불꽃, 속성 파편, 화면 흔들림이 한꺼번에 시작돼.
+        // 멈춤이 풀리는 순간이야. 충격파, 빛줄기, 불꽃, 속성 파편, 화면 흔들림이 한꺼번에 시작돼.
         private void Release()
         {
             released = true;
@@ -448,47 +383,8 @@ namespace ElementalBreaker
                 partRenderers[i].enabled = true;
             glowMain.enabled = true;
             glowLight.enabled = true;
+            ring.enabled = ring.sprite != null;
             ScreenShake.Play(ShakeTime, ShakeStrength, ShakeVibrato);
-        }
-
-        private bool UpdateCorners(float t)
-        {
-            // 누르는 순간 범위보다 살짝 바깥에서 "착" 조여들고, 멈춤이 풀린 뒤 잠깐 머물다 흐려져.
-            float fadeStart = impactTime + CornerHoldTime;
-            if (t >= fadeStart + CornerFadeTime)
-            {
-                if (corners[0].enabled)
-                    for (int i = 0; i < corners.Length; i++)
-                        corners[i].enabled = false;
-                return false;
-            }
-            float lockK = Mathf.Clamp01(t / LockTime);
-            float inflate = LockInflate * (1f - EffectMath.EaseOut(lockK));
-            Vector2 grow = new Vector2(inflate, inflate);
-            float alpha = t < fadeStart ? 1f : 1f - (t - fadeStart) / CornerFadeTime;
-            PlaceCorners(lockMin - grow, lockMax + grow, alpha, 1f + 0.15f * (1f - lockK));
-            return true;
-        }
-
-        private bool UpdateRange(float t)
-        {
-            float flash = Mathf.Clamp01(1f - t / RangeFlashTime);
-            float edge = t < impactTime + EdgeHoldTime ? 1f : 1f - (t - impactTime - EdgeHoldTime) / EdgeFadeTime;
-            if (flash <= 0f && edge <= 0f)
-            {
-                rangeFill.enabled = false;
-                rangeInner.enabled = false;
-                rangeEdge.enabled = false;
-                return false;
-            }
-            // 처음엔 범위 전체가 번쩍이고, 그 뒤엔 옅은 색과 테두리만 남아.
-            rangeFill.enabled = true;
-            rangeFill.color = WithAlpha(mainColor, Mathf.Max(RangeFlashAlpha * flash, RangeTintAlpha * edge));
-            rangeInner.enabled = flash > 0f;
-            rangeInner.color = WithAlpha(lightColor, RangeInnerAlpha * flash);
-            rangeEdge.enabled = edge > 0f;
-            rangeEdge.color = WithAlpha(lightColor, RangeEdgeAlpha * edge);
-            return true;
         }
 
         private bool UpdateScreenFlash(float t)
@@ -532,10 +428,12 @@ namespace ElementalBreaker
                     return false;
                 }
                 sprite = frames[index];
-                scale = blastScale * (1f + BlastGrow * Mathf.Clamp01(r / frameTotal));
-                // 마지막 프레임은 흐려지며 사라져.
-                if (index == frames.Length - 1)
-                    alpha = 1f - k;
+                // 고리 에너지가 남아 있는 동안 바깥으로 계속 퍼지고, 마지막 두 프레임에서 흐려져.
+                scale = blastScale * (1f + BlastGrow * EffectMath.EaseOut(r / frameTotal));
+                if (index == frames.Length - 2)
+                    alpha = 1f - 0.25f * k;
+                else if (index == frames.Length - 1)
+                    alpha = 0.75f * (1f - k);
             }
             blast.enabled = sprite != null;
             if (sprite == null)
@@ -554,20 +452,40 @@ namespace ElementalBreaker
                 glowLight.enabled = false;
                 return false;
             }
-            // 폭발 그림 아래에서 속성색 빛이 번졌다가 사라져. 겹친 가운데가 가장 밝아.
+            // 폭발 그림 아래에서 속성색 빛이 번졌다가 사라져. 흰빛으로 덮지 않아서 남은 벽돌과 공이 보여.
             float alpha = 1f - r / GlowTime;
-            float radius = nominalWidth * (0.45f + 0.35f * EffectMath.EaseOut(r / 0.1f));
+            float radius = nominalSize * (0.45f + 0.35f * EffectMath.EaseOut(r / 0.1f));
             float mainScale = radius * 2f / glowWorldSize, lightScale = radius * 1.1f / glowWorldSize;
             glowMain.transform.localScale = new Vector3(mainScale, mainScale, 1f);
-            glowMain.color = WithAlpha(mainColor, 0.7f * alpha);
+            glowMain.color = WithAlpha(mainColor, GlowMainAlpha * alpha);
             glowLight.transform.localScale = new Vector3(lightScale, lightScale, 1f);
-            glowLight.color = WithAlpha(lightColor, alpha);
+            glowLight.color = WithAlpha(lightColor, GlowLightAlpha * alpha);
+            return true;
+        }
+
+        private bool UpdateRing(float r)
+        {
+            if (!ring.enabled)
+                return false;
+            float k = r / RingTime;
+            if (k >= 1f)
+            {
+                ring.enabled = false;
+                return false;
+            }
+            // 고정된 테두리가 아니라 바깥으로 퍼지며 사라지는 폭발의 일부야. 살짝 돌면서 퍼져.
+            float radius = nominalSize * Mathf.Lerp(RingStartRadius, RingEndRadius, EffectMath.EaseOut(k));
+            float scale = radius * 2f / (ringWorldSize * RingContentRatio);
+            ring.transform.localScale = new Vector3(scale, scale, 1f);
+            ring.transform.rotation = Quaternion.Euler(0f, 0f, ringAngle + r * 86f);
+            // 퍼지면서 빠르게 옅어져서 바깥에 테두리처럼 남지 않아.
+            ring.color = WithAlpha(ringColor, RingAlpha * (1f - k) * (1f - k));
             return true;
         }
 
         private bool UpdateRays(float r)
         {
-            float alpha = r < 0.04f ? 1f : 1f - (r - 0.04f) / (RayTime - 0.04f);
+            float alpha = RayAlpha * (r < 0.04f ? 1f : 1f - (r - 0.04f) / (RayTime - 0.04f));
             if (alpha <= 0f)
             {
                 if (rayRenderers[0].enabled)
@@ -575,20 +493,20 @@ namespace ElementalBreaker
                         rayRenderers[i].enabled = false;
                 return false;
             }
-            float start = nominalWidth * 0.08f;
+            float start = nominalSize * 0.08f;
             float grow = EffectMath.EaseOut(r / RayGrowTime);
             float thin = 1f - 0.6f * Mathf.Min(1f, r / RayTime);
             Color color = WithAlpha(lightColor, alpha);
             for (int i = 0; i < RayCount; i++)
             {
-                LightRay ray = rays[i];
-                float length = Mathf.Max(0.001f, ray.Length * grow);
-                Vector2 direction = new Vector2(Mathf.Cos(ray.Angle), Mathf.Sin(ray.Angle));
+                LightRay lightRay = rays[i];
+                float length = Mathf.Max(0.001f, lightRay.Length * grow);
+                Vector2 direction = new Vector2(Mathf.Cos(lightRay.Angle), Mathf.Sin(lightRay.Angle));
                 // 빛줄기 이미지는 왼쪽(굵은 쪽)이 가운데를 향해.
                 Transform target = rayRenderers[i].transform;
                 target.position = WorldPoint(blastCenter + direction * (start + length * 0.5f));
-                target.rotation = Quaternion.Euler(0f, 0f, ray.Angle * Mathf.Rad2Deg);
-                target.localScale = new Vector3(length / rayLength, ray.Width * thin / rayWidth, 1f);
+                target.rotation = Quaternion.Euler(0f, 0f, lightRay.Angle * Mathf.Rad2Deg);
+                target.localScale = new Vector3(length / rayLength, lightRay.Width * thin / rayWidth, 1f);
                 rayRenderers[i].color = color;
             }
             return true;
@@ -673,31 +591,11 @@ namespace ElementalBreaker
             return color;
         }
 
-        private void PlaceCorners(Vector2 min, Vector2 max, float alpha, float scale)
-        {
-            // 모서리 이미지는 왼쪽 위 방향(⌜)이라, 나머지 세 귀퉁이는 돌려서 써.
-            float z = transform.position.z;
-            SetCorner(corners[0], new Vector3(min.x, max.y, z), 0f, alpha, scale);
-            SetCorner(corners[1], new Vector3(max.x, max.y, z), -90f, alpha, scale);
-            SetCorner(corners[2], new Vector3(max.x, min.y, z), 180f, alpha, scale);
-            SetCorner(corners[3], new Vector3(min.x, min.y, z), 90f, alpha, scale);
-        }
-
-        private static void SetCorner(SpriteRenderer corner, Vector3 position, float angle, float alpha, float scale)
-        {
-            corner.enabled = alpha > 0f;
-            corner.transform.position = position;
-            corner.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-            corner.transform.localScale = new Vector3(scale, scale, 1f);
-            corner.color = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
-        }
-
         private void OnDisable()
         {
             if (blast == null)
                 return;
             detonateTime = -1f;
-            previewShown = false;
             HideAll();
         }
 

@@ -32,6 +32,8 @@ namespace ElementalBreaker
         [SerializeField, Min(0)] private int bombRadius = 1;
         [Tooltip("기본 데미지 = 턴 ÷ 이 값(올림). 유리한 상성이면 2배야.")]
         [SerializeField, Min(1)] private int bombDamageDivisor = 2;
+        [Tooltip("폭발 중심과 같은 줄, 같은 칸(가운데 십자)에 있는 벽돌이 받는 배율. 대각선은 1배야. 유리한 상성 2배와 같이 곱해져.")]
+        [SerializeField, Min(1)] private int bombCrossMultiplier = 2;
         [Tooltip("누르는 순간 게임이 멈춘 듯 느려지며 하얀 섬광 장면(임팩트 프레임)을 보여 주는 시간(초, 실제 시간). 끝나는 순간 폭발이 터져.")]
         [SerializeField, Min(0f)] private float bombHitStopTime = 0.1f;
         [Tooltip("느려지는 동안의 게임 속도. 0이면 완전히 멈춰.")]
@@ -113,7 +115,7 @@ namespace ElementalBreaker
             HitStop hitStop = Effects.gameObject.AddComponent<HitStop>();
             BombEffects bombEffects = new GameObject("Bomb Effects").AddComponent<BombEffects>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(bombEffects.gameObject, gameObject.scene);
-            bombEffects.Initialize(this, launcher, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
+            bombEffects.Initialize(this, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
             bomb = new BombItem(this, launcher, hitStop, bombEffects);
             if (brickTemplate.gameObject.scene.IsValid())
                 brickTemplate.gameObject.SetActive(false);
@@ -148,7 +150,16 @@ namespace ElementalBreaker
             row = Mathf.Clamp(Mathf.FloorToInt((top - position.y) / cellSize.y), 0, rows - 1);
         }
 
-        // (row, column) 주변 radius칸 안의 벽돌을 results에 담아. 보드 가장자리에서는 안쪽만 봐.
+        // 폭탄 범위의 가운데 칸이야. 첫째 줄 위의 맨 위 빈 공간은 줄 번호가 없어서 -1번 줄로 쳐.
+        // 그래서 맨 위에서 터지면 3x3 중 벽돌이 있는 바로 밑 첫째 줄만 맞아.
+        public void WorldToBombCell(Vector2 position, out int row, out int column)
+        {
+            WorldToCell(position, out row, out column);
+            if (position.y > boardCenter.y + boardSize.y * 0.5f)
+                row = -1;
+        }
+
+        // (row, column) 주변 radius칸 안의 벽돌을 results에 담아. 보드 밖 칸(맨 위 -1번 줄 등)은 건너뛰어.
         public void CollectBricksInRange(int row, int column, int radius, List<Brick> results)
         {
             results.Clear();
@@ -163,17 +174,6 @@ namespace ElementalBreaker
         public int BombRadius => bombRadius;
         // 칸 하나의 월드 크기야. 폭발 크기를 범위 칸 수에 맞출 때 써.
         public Vector2 CellSize => cellSize;
-
-        // (row, column) 주변 radius칸 범위의 월드 경계야. 보드 가장자리에서는 안쪽까지만.
-        public void GetRangeBounds(int row, int column, int radius, out Vector2 min, out Vector2 max)
-        {
-            float left = boardCenter.x - boardSize.x * 0.5f;
-            float top = boardCenter.y + boardSize.y * 0.5f;
-            int rowMin = Mathf.Max(0, row - radius), rowMax = Mathf.Min(rows - 1, row + radius);
-            int columnMin = Mathf.Max(0, column - radius), columnMax = Mathf.Min(columns - 1, column + radius);
-            min = new Vector2(left + columnMin * cellSize.x, top - (rowMax + 1) * cellSize.y);
-            max = new Vector2(left + (columnMax + 1) * cellSize.x, top - rowMin * cellSize.y);
-        }
 
         // 상점의 "벽돌 속성 변경"이야. 보드에 있는 모든 벽돌을 target 속성으로 바꿔.
         public void ChangeAllBrickElements(ElementType target)
@@ -196,7 +196,7 @@ namespace ElementalBreaker
             switch (Items.Held)
             {
                 case ItemType.Bomb:
-                    used = bomb.Detonate(bombRadius, bombDamageDivisor, bombHitStopTime, bombHitStopScale);
+                    used = bomb.Detonate(bombRadius, bombDamageDivisor, bombCrossMultiplier, bombHitStopTime, bombHitStopScale);
                     break;
             }
             if (used)
@@ -381,6 +381,7 @@ namespace ElementalBreaker
             descentDuration = Mathf.Max(0f, descentDuration);
             bombRadius = Mathf.Max(0, bombRadius);
             bombDamageDivisor = Mathf.Max(1, bombDamageDivisor);
+            bombCrossMultiplier = Mathf.Max(1, bombCrossMultiplier);
             bombHitStopTime = Mathf.Max(0f, bombHitStopTime);
             bombHitStopScale = Mathf.Clamp01(bombHitStopScale);
         }
