@@ -62,12 +62,13 @@ namespace ElementalBreaker.Editor
             }
             EnsureImported(SpriteFolder + "ui_slot.png");
             Sprite slot = Load("ui_slot"), dash = Load("ui_slot_dash"), circle = Load("ui_circle"), pill = Load("ui_pill");
-            Sprite bombBody = Load("ui_bomb_body"), bombFuse = Load("ui_bomb_fuse"), ice = Load("ui_ice");
+            // 폭탄은 실행 중에 이번 턴 속성의 아이콘으로 바뀌어. 처음에는 일반 폭탄을 넣어 둬.
+            Sprite bombIcon = Load("ui_bomb_normal"), ice = Load("ui_ice");
             Sprite bag = Load("ui_bag"), chevron = Load("ui_chevron"), cycle = Load("ui_cycle_arrow"), brick = Load("brick_base");
             Sprite coin = Load("fx_coin");
             Sprite ring = AssetDatabase.LoadAssetAtPath<Sprite>(EffectFolder + "fx_ring.png");
             Sprite[] icons = { Load("ui_icon_normal"), Load("ui_icon_fire"), Load("ui_icon_water"), Load("ui_icon_grass") };
-            if (slot == null || dash == null || circle == null || pill == null || bombBody == null || bombFuse == null || ice == null ||
+            if (slot == null || dash == null || circle == null || pill == null || bombIcon == null || ice == null ||
                 bag == null || chevron == null || cycle == null || brick == null || coin == null || ring == null || icons[0] == null)
             {
                 Notify("UI 이미지 일부를 찾지 못했어. Assets/Art/Casual을 확인해.");
@@ -94,10 +95,8 @@ namespace ElementalBreaker.Editor
             Text("Hint", list, "발사 전에만 살 수 있어요", 12.5f, Muted, false, BottomLeft, new Vector2(1f, 0.5f), new Vector2(288f, 289f), new Vector2(170f, 20f), TextAlignmentOptions.MidlineRight);
             Text("StoredSection", list, "아이템 칸에 보관", 13f, Muted, false, BottomLeft, new Vector2(0f, 0.5f), new Vector2(6f, 260f), new Vector2(200f, 18f), TextAlignmentOptions.MidlineLeft);
             ShopPanel.Card bombCard = CreateCard("BombCard", list, 176f, "속성 폭탄", slot, circle, pill, coin);
-            bombCard.iconBody = CreateImage("Body", bombCard.group.transform, bombBody, Image.Type.Simple, false);
+            bombCard.iconBody = CreateImage("Body", bombCard.group.transform, bombIcon, Image.Type.Simple, false);
             Place(bombCard.iconBody.rectTransform, BottomLeft, Center, new Vector2(36f, 31f), new Vector2(46f, 46f));
-            bombCard.iconOverlay = CreateImage("Fuse", bombCard.group.transform, bombFuse, Image.Type.Simple, false);
-            Place(bombCard.iconOverlay.rectTransform, BottomLeft, Center, new Vector2(36f, 31f), new Vector2(46f, 46f));
             ShopPanel.Card iceCard = CreateCard("IceCard", list, 102f, "얼음", slot, circle, pill, coin);
             iceCard.iconBody = CreateImage("Body", iceCard.group.transform, ice, Image.Type.Simple, false);
             Place(iceCard.iconBody.rectTransform, BottomLeft, Center, new Vector2(36f, 31f), new Vector2(40f, 40f));
@@ -127,10 +126,8 @@ namespace ElementalBreaker.Editor
             Place(glow.rectTransform, Center, Center, new Vector2(0f, 2f), new Vector2(88f, 88f));
             Image empty = CreateImage("Empty", slotImage.transform, dash, Image.Type.Simple, false);
             Place(empty.rectTransform, Center, Center, new Vector2(0f, 2.5f), new Vector2(58f, 56f));
-            Image itemBody = CreateImage("ItemBody", slotImage.transform, bombBody, Image.Type.Simple, false);
+            Image itemBody = CreateImage("ItemBody", slotImage.transform, bombIcon, Image.Type.Simple, false);
             Place(itemBody.rectTransform, Center, Center, new Vector2(0f, 2.5f), new Vector2(54f, 54f));
-            Image itemOverlay = CreateImage("ItemOverlay", slotImage.transform, bombFuse, Image.Type.Simple, false);
-            Place(itemOverlay.rectTransform, Center, Center, new Vector2(0f, 2.5f), new Vector2(54f, 54f));
             TMP_Text slotLabel = Text("ItemLabel", bar, "아이템", 13f, Muted, false, BottomLeft, Center, new Vector2(51f, 36f), new Vector2(110f, 20f), TextAlignmentOptions.Midline);
 
             // 가운데: 공 속성 버튼 (발사 중에는 숨김)
@@ -190,8 +187,8 @@ namespace ElementalBreaker.Editor
 
             SerializedObject so = new SerializedObject(slotScript);
             Set(so, "board", board); Set(so, "launcher", launcher); Set(so, "button", slotButton);
-            Set(so, "emptyFrame", empty); Set(so, "readyGlow", glow); Set(so, "itemBody", itemBody); Set(so, "itemOverlay", itemOverlay);
-            Set(so, "label", slotLabel); Set(so, "bombBody", bombBody); Set(so, "bombFuse", bombFuse); Set(so, "iceIcon", ice);
+            Set(so, "emptyFrame", empty); Set(so, "readyGlow", glow); Set(so, "itemBody", itemBody);
+            Set(so, "label", slotLabel); Set(so, "iceIcon", ice);
             so.ApplyModifiedPropertiesWithoutUndo();
 
             so = new SerializedObject(select);
@@ -218,7 +215,6 @@ namespace ElementalBreaker.Editor
             popover.gameObject.SetActive(false);
             glow.enabled = false;
             itemBody.enabled = false;
-            itemOverlay.enabled = false;
 
             Undo.RegisterCreatedObjectUndo(dim.gameObject, "Create Bottom Bar & Shop");
             Undo.RegisterCreatedObjectUndo(list.gameObject, "Create Bottom Bar & Shop");

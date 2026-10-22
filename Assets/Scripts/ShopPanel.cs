@@ -220,8 +220,11 @@ namespace ElementalBreaker
             int gold = board.Gold.Amount;
             bool slotFull = !board.Items.IsEmpty;
 
-            // 속성 폭탄: 아이콘은 이번 턴 공 속성 색이야.
-            bombCard.iconBody.color = ElementRules.GetBombTint(element);
+            // 속성 폭탄: 아이콘은 이번 턴 공 속성의 폭탄이야. 심지까지 한 장이라 예전 심지 이미지는 숨겨.
+            bombCard.iconBody.sprite = ElementRules.GetBombIcon(element);
+            bombCard.iconBody.color = Color.white;
+            if (bombCard.iconOverlay != null)
+                bombCard.iconOverlay.enabled = false;
             SetCard(bombCard, BombPrice, slotFull ? "아이템 칸이 차 있어요" : gold < BombPrice ? "골드가 부족해요" : null,
                 "맨 앞 공 주변 3x3 폭발");
             SetCard(iceCard, IcePrice, "곧 추가돼요", "이번 턴 벽돌이 안 내려옴");

@@ -15,9 +15,11 @@ namespace ElementalBreaker
         private const string IconName = "Element Icon";
         // 맞을 때 찌그러졌다 돌아오는 시간이야.
         private const float HitPoseTime = 0.12f;
-        // 맞는 순간 흰색으로 섞이는 비율이야. 폭탄은 완전히 하얗게 번쩍여.
+        // 맞는 순간 흰색으로 섞이는 비율이야.
         private const float HitFlash = 0.45f;
-        private const float BombHitFlash = 1f;
+        // 폭탄에 맞으면 완전히 하얗게 번쩍이고, 실제 시간으로 이만큼만 유지해.
+        // 히트 스톱이 길어도 숫자와 속성이 금방 다시 보여.
+        private const float BombFlashTime = 0.05f;
 
         private BoxCollider2D hitbox;
         private SpriteRenderer visual;
@@ -30,6 +32,7 @@ namespace ElementalBreaker
         private bool labelScaleCached;
         private float hitTime = -1f;
         private float hitFlash = HitFlash;
+        private float bombFlashStart = -1f;
         public int Row { get; private set; } = -1;
         public int Column { get; private set; } = -1;
         public int Health { get; private set; }
@@ -162,10 +165,12 @@ namespace ElementalBreaker
         public void TakeHit(int damage, ElementType attacker, Vector2 point) =>
             ApplyDamage(damage, ElementRules.HasAdvantage(attacker, Element), attacker, point, false);
 
-        // 폭탄에 맞았을 때야. 큰 폭발 하나가 대표하니까, 깨질 때 벽돌마다 버스트를 또 터뜨리지 않아.
-        public void TakeBombHit(int damage, ElementType attacker) =>
-            ApplyDamage(damage, ElementRules.HasAdvantage(attacker, Element), attacker, transform.position, true);
+        // 폭탄에 맞았을 때야. 큰 폭발 하나가 대표하니까, 벽돌마다 버스트를 또 터뜨리지 않아.
+        // 깨지면 벽돌 조각이 폭발 중심(blastCenter)에서 멀어지는 쪽으로 튀어.
+        public void TakeBombHit(int damage, ElementType attacker, Vector2 blastCenter) =>
+            ApplyDamage(damage, ElementRules.HasAdvantage(attacker, Element), attacker, blastCenter, true);
 
+        // point는 공이면 맞은 자리, 폭탄이면 폭발 중심이야.
         private void ApplyDamage(int damage, bool advantage, ElementType attacker, Vector2 point, bool fromBomb = false)
         {
             if (destroyed || damage <= 0)
@@ -177,8 +182,13 @@ namespace ElementalBreaker
             if (Health > 0)
             {
                 hitTime = 0f;
-                // 폭탄은 히트 스톱으로 게임 시간이 거의 멈춰서, 하얀 채로 잠깐 멈춘 장면(임팩트 프레임)이 돼.
-                hitFlash = fromBomb ? BombHitFlash : HitFlash;
+                if (fromBomb)
+                {
+                    hitFlash = 0f;
+                    bombFlashStart = Time.unscaledTime;
+                    return;
+                }
+                hitFlash = HitFlash;
                 if (advantage && effects != null)
                     effects.PlaySmallBurst(attacker, point);
                 return;
@@ -190,7 +200,7 @@ namespace ElementalBreaker
             if (board != null)
                 board.AwardBreak(advantage);
             if (effects != null)
-                effects.PlayBreak(transform.position, baseSize, Element, advantage, attacker, fromBomb);
+                effects.PlayBreak(transform.position, baseSize, Element, advantage, attacker, fromBomb, point);
             if (board != null)
                 board.Release(this);
             else
@@ -199,27 +209,48 @@ namespace ElementalBreaker
 
         private void Update()
         {
-            if (hitTime < 0f)
+            if (hitTime < 0f && bombFlashStart < 0f)
                 return;
 
-            // 콜라이더는 그대로 두고 보이는 크기만 바꿔서 물리에는 영향이 없어.
-            hitTime += Time.deltaTime;
-            float k = hitTime / HitPoseTime;
-            if (k >= 1f)
+            float flash = 0f;
+            if (bombFlashStart >= 0f)
             {
-                ResetHitPose();
-                return;
+                // 폭탄 번쩍임은 히트 스톱과 상관없이 실제 시간으로 짧게 끝나.
+                flash = 1f - (Time.unscaledTime - bombFlashStart) / BombFlashTime;
+                if (flash <= 0f)
+                {
+                    flash = 0f;
+                    bombFlashStart = -1f;
+                }
             }
-            float wobble = Mathf.Sin(k * Mathf.PI);
-            visual.size = new Vector2(baseSize.x * (1f + 0.06f * wobble), baseSize.y * (1f - 0.08f * wobble));
-            visual.color = Color.Lerp(baseColor, Color.white, hitFlash * (1f - k));
-            if (healthLabel != null)
-                healthLabel.transform.localScale = labelBaseScale * (1f + 0.35f * wobble);
+            if (hitTime >= 0f)
+            {
+                // 콜라이더는 그대로 두고 보이는 크기만 바꿔서 물리에는 영향이 없어.
+                hitTime += Time.deltaTime;
+                float k = hitTime / HitPoseTime;
+                if (k >= 1f)
+                {
+                    hitTime = -1f;
+                    visual.size = baseSize;
+                    if (healthLabel != null)
+                        healthLabel.transform.localScale = labelBaseScale;
+                }
+                else
+                {
+                    float wobble = Mathf.Sin(k * Mathf.PI);
+                    visual.size = new Vector2(baseSize.x * (1f + 0.06f * wobble), baseSize.y * (1f - 0.08f * wobble));
+                    flash = Mathf.Max(flash, hitFlash * (1f - k));
+                    if (healthLabel != null)
+                        healthLabel.transform.localScale = labelBaseScale * (1f + 0.35f * wobble);
+                }
+            }
+            visual.color = Color.Lerp(baseColor, Color.white, flash);
         }
 
         private void ResetHitPose()
         {
             hitTime = -1f;
+            bombFlashStart = -1f;
             visual.size = baseSize;
             visual.color = baseColor;
             if (healthLabel != null)

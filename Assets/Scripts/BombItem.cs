@@ -29,6 +29,9 @@ namespace ElementalBreaker
                 return false;
 
             board.WorldToCell(front.transform.position, out int row, out int column);
+            board.GetRangeBounds(row, column, radius, out Vector2 min, out Vector2 max);
+            // 폭발은 범위 한가운데에서 터져. 깨진 벽돌 조각도 여기서 멀어지는 쪽으로 튀어.
+            Vector2 center = (min + max) * 0.5f;
             board.CollectBricksInRange(row, column, radius, targets);
             ElementType element = launcher.TurnElement;
             int baseDamage = board.BombDamage(damageDivisor);
@@ -37,15 +40,12 @@ namespace ElementalBreaker
                 Brick brick = targets[i];
                 // 공과 같은 규칙: 유리한 상성이면 2배, 나머지는 1배야. 골드도 공으로 깰 때와 같아.
                 int damage = ElementRules.HasAdvantage(element, brick.Element) ? baseDamage * 2 : baseDamage;
-                brick.TakeBombHit(damage, element);
+                brick.TakeBombHit(damage, element, center);
             }
             targets.Clear();
+            // 히트 스톱 동안은 멈춘 장면을 보여 주고, 끝나는 순간 터지게 시간을 맞춰.
             if (effects != null)
-            {
-                board.GetRangeBounds(row, column, radius, out Vector2 min, out Vector2 max);
-                // 히트 스톱 동안은 멈춘 장면을 보여 주고, 끝나는 순간 터지게 시간을 맞춰.
-                effects.PlayDetonate(min, max, front.transform.position, element, hitStopTime);
-            }
+                effects.PlayDetonate(min, max, element, hitStopTime);
             if (hitStop != null)
                 hitStop.Play(hitStopTime, hitStopScale);
             return true;

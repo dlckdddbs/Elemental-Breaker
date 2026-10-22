@@ -21,11 +21,10 @@ namespace ElementalBreaker
         [SerializeField] private Image emptyFrame;
         [SerializeField] private Image readyGlow;
         [SerializeField] private Image itemBody;
+        [Tooltip("예전 폭탄 심지 이미지 자리야. 새 폭탄 아이콘은 심지까지 한 장이라 숨겨 둬.")]
         [SerializeField] private Image itemOverlay;
         [SerializeField] private TMP_Text label;
-        [Header("아이템 이미지")]
-        [SerializeField] private Sprite bombBody;
-        [SerializeField] private Sprite bombFuse;
+        [Header("아이템 이미지 (폭탄은 속성별 아이콘을 코드에서 불러와)")]
         [SerializeField] private Sprite iceIcon;
 
         private ItemType shownItem = (ItemType)(-1);
@@ -103,13 +102,13 @@ namespace ElementalBreaker
             bool has = item != ItemType.None;
             emptyFrame.enabled = !has;
             itemBody.enabled = has;
-            itemOverlay.enabled = item == ItemType.Bomb;
+            if (itemOverlay != null)
+                itemOverlay.enabled = false;
             if (item == ItemType.Bomb)
             {
-                // 폭탄은 이번 턴 공 속성으로 터지니까 그 색을 입혀.
-                itemBody.sprite = bombBody;
-                itemBody.color = ElementRules.GetBombTint(element);
-                itemOverlay.sprite = bombFuse;
+                // 폭탄은 이번 턴 공 속성으로 터지니까 그 속성의 폭탄을 보여 줘.
+                itemBody.sprite = ElementRules.GetBombIcon(element);
+                itemBody.color = Color.white;
             }
             else if (item == ItemType.Ice)
             {

@@ -161,6 +161,8 @@ namespace ElementalBreaker
         }
 
         public int BombRadius => bombRadius;
+        // 칸 하나의 월드 크기야. 폭발 크기를 범위 칸 수에 맞출 때 써.
+        public Vector2 CellSize => cellSize;
 
         // (row, column) 주변 radius칸 범위의 월드 경계야. 보드 가장자리에서는 안쪽까지만.
         public void GetRangeBounds(int row, int column, int radius, out Vector2 min, out Vector2 max)

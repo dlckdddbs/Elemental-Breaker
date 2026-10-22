@@ -10,6 +10,8 @@ namespace ElementalBreaker
     public static class ElementRules
     {
         public const int AuraFrameCount = 4;
+        // 폭탄 폭발 그림 프레임 수야. 0번은 멈춘 장면의 작은 별, 1번부터 터지는 모습이야.
+        public const int BlastFrameCount = 8;
 
         private static readonly string[] Names = { "normal", "fire", "water", "grass" };
         // 회색 벽돌 바탕(밝기 225)에 곱해져서 화면에서 속성 색으로 보이는 틴트야.
@@ -36,6 +38,9 @@ namespace ElementalBreaker
         private static Sprite[] uiIconSprites;
         // 속성별 오라 프레임이야. 일반은 오라가 없어서 null이야.
         private static Sprite[][] auraFrames;
+        // 폭탄 폭발 프레임과 폭탄 아이콘이야. 폭탄을 처음 쓸 때 한 번만 읽어.
+        private static Sprite[][] blastFrames;
+        private static Sprite[] bombIcons;
 
         // 원본 이미지는 Resources 밖에 있고, 게임은 Resources의 아틀라스 두 개에서 꺼내 써.
         private const string SpriteAtlasPath = "Atlases/CasualSprites";
@@ -85,6 +90,19 @@ namespace ElementalBreaker
             return auraFrames[(int)element];
         }
 
+        public static Sprite[] GetBlastFrames(ElementType element)
+        {
+            LoadBombSprites();
+            return blastFrames[(int)element];
+        }
+
+        // 아이템 칸과 상점에 보이는 폭탄이야. 이번 턴 공 속성의 폭탄이 보여.
+        public static Sprite GetBombIcon(ElementType element)
+        {
+            LoadBombSprites();
+            return bombIcons[(int)element];
+        }
+
         // 이펙트용 작은 이미지야. 같은 이미지를 여러 곳에서 불러도 캐시에서 하나를 같이 써.
         public static Sprite LoadEffectSprite(string name) => LoadSprite("fx_" + name);
 
@@ -116,10 +134,20 @@ namespace ElementalBreaker
             }
         }
 
-        // 폭탄 아이콘 색이야. 속성 턴은 공 색, 일반 턴은 진한 회색 폭탄이야.
-        private static readonly Color32 NormalBombTint = new Color32(0x6B, 0x73, 0x90, 0xFF);
-        public static Color GetBombTint(ElementType element) =>
-            element == ElementType.Normal ? (Color)NormalBombTint : GetBallTint(element);
+        private static void LoadBombSprites()
+        {
+            if (bombIcons != null)
+                return;
+            bombIcons = new Sprite[Names.Length];
+            blastFrames = new Sprite[Names.Length][];
+            for (int i = 0; i < Names.Length; i++)
+            {
+                bombIcons[i] = LoadSprite("ui_bomb_" + Names[i]);
+                blastFrames[i] = new Sprite[BlastFrameCount];
+                for (int frame = 0; frame < BlastFrameCount; frame++)
+                    blastFrames[i][frame] = LoadSprite("fx_blast_" + Names[i] + "_" + frame);
+            }
+        }
 
         private static void LoadSprites()
         {
