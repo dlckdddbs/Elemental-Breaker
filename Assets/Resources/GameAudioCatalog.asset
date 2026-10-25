@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69b8d7bc1538482f87c3ba8e877e3922, type: 3}
+  m_Name: GameAudioCatalog
+  m_EditorClassIdentifier:
+  sounds:
+  - clip: {fileID: 0}
+    volume: 0
+  - clip: {fileID: 0}
+    volume: 0
+  - clip: {fileID: 0}
+    volume: 0
+  - clip: {fileID: 8300000, guid: e88879420c98b314f8afe78f5c9cd6f3, type: 3}
+    volume: 0.5
+  - clip: {fileID: 0}
+    volume: 0
+  - clip: {fileID: 8300000, guid: 80d33787bf15f3b4d8880aa599f01f43, type: 3}
+    volume: 0.35
+  - clip: {fileID: 8300000, guid: 9b7014f76a7165146a8ead41951c725a, type: 3}
+    volume: 0.4
+  - clip: {fileID: 8300000, guid: d4eb5092e736fff47993c779bc9019b8, type: 3}
+    volume: 0.75
+  - clip: {fileID: 8300000, guid: fff9c6395cb9a6e449472432c6ab7d87, type: 3}
+    volume: 0.65
+  - clip: {fileID: 8300000, guid: e07a00f9256c4884ba8fc8cd3b58d92b, type: 3}
+    volume: 0.6
+  - clip: {fileID: 8300000, guid: 31fb5f918f0935c4b814bd2a35162e35, type: 3}
+    volume: 0.8
+  - clip: {fileID: 8300000, guid: e44590984fc94b04d89bd9768500cad2, type: 3}
+    volume: 0.9
+  - clip: {fileID: 8300000, guid: a5ac1acb8eecbc64f8b33e15000cd936, type: 3}
+    volume: 0.65
+  - clip: {fileID: 8300000, guid: 3edda7e8d029250419d9dcafbdde240c, type: 3}
+    volume: 0.5
+  - clip: {fileID: 8300000, guid: 525c9077cc2c13a4795847f38711cc73, type: 3}
+    volume: 0.5
+  - clip: {fileID: 8300000, guid: 14e9c501574b27945953e769a1b8bbf4, type: 3}
+    volume: 0.5
+  - clip: {fileID: 8300000, guid: c922aab213c9a65408342b979d4aa803, type: 3}
+    volume: 0.5
+  - clip: {fileID: 8300000, guid: 850eda016756dc64694ad3736b5ed52e, type: 3}
+    volume: 0.6
+  - clip: {fileID: 8300000, guid: cc16865388d47c04ebc4b8267096a6a0, type: 3}
+    volume: 0.45
+  - clip: {fileID: 8300000, guid: 7f6bcb3416d7faf41b3a6c8811fb797c, type: 3}
+    volume: 0.55
+  - clip: {fileID: 0}
+    volume: 0.6
+  - clip: {fileID: 0}
+    volume: 0.6

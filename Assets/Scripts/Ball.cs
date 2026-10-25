@@ -24,6 +24,19 @@ namespace ElementalBreaker
         private const float AuraFadeAlpha = 0.6f;
 
         private Rigidbody2D body;
+        private float speedMultiplier = 1f;
+
+        // 기본 속도는 유지하고 배속만 바꿔.
+        public void SetSpeedMultiplier(float multiplier)
+        {
+            speedMultiplier = Mathf.Clamp(multiplier, 1f, 2f);
+            if (IsFlying && body != null)
+            {
+                Vector2 direction = body.linearVelocity.sqrMagnitude > 0.0001f
+                    ? body.linearVelocity.normalized : lastDirection;
+                body.linearVelocity = direction * (speed * speedMultiplier);
+            }
+        }
         private PhysicsMaterial2D bounceMaterial;
         private Vector2 launchPosition;
         private Vector2 lastDirection = Vector2.up;
@@ -172,6 +185,7 @@ namespace ElementalBreaker
             // 비활성 프리팹에서 만든 공도 물리를 먼저 준비해.
             InitializePhysics();
             IsFlying = false;
+            speedMultiplier = 1f;
             // 멈춰 있는 공은 방향이 없어서 오라를 숨겨.
             if (aura != null)
                 aura.enabled = false;
@@ -191,7 +205,7 @@ namespace ElementalBreaker
             lastDirection = direction.normalized;
             body.simulated = true;
             IsFlying = true;
-            body.linearVelocity = lastDirection * speed;
+            body.linearVelocity = lastDirection * (speed * speedMultiplier);
             if (aura != null && auraFrames != null)
             {
                 aura.enabled = true;
@@ -220,7 +234,7 @@ namespace ElementalBreaker
                 direction.x = Mathf.Sign(direction.x) * Mathf.Sqrt(1f - direction.y * direction.y);
             }
             lastDirection = direction;
-            body.linearVelocity = direction * speed;
+            body.linearVelocity = direction * (speed * speedMultiplier);
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
@@ -253,7 +267,7 @@ namespace ElementalBreaker
             if (Vector2.Dot(direction, normal) < minimumVerticalRatio)
                 direction = (direction + normal * (minimumVerticalRatio * 2f)).normalized;
             lastDirection = direction;
-            body.linearVelocity = direction * speed;
+            body.linearVelocity = direction * (speed * speedMultiplier);
         }
 
         private void HitBrick(Brick brick)
@@ -279,6 +293,7 @@ namespace ElementalBreaker
             Prepare(launchPosition);
             if (visual != null)
                 visual.enabled = false;
+            GameAudio.Play(SoundCue.Retire);
             Retired?.Invoke(this);
         }
 

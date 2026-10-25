@@ -56,6 +56,9 @@ namespace ElementalBreaker
         public int TurnNumber { get; private set; } = 1;
         public int DescentCount { get; private set; }
         public BrickEffects Effects { get; private set; }
+        public IceEffects Ice { get; private set; }
+        // 이번 턴에 얼음을 썼어. 턴이 끝나면 벽돌이 내려오지 않고 새 줄도 생기지 않아. 턴 수는 그대로 1 올라가.
+        public bool IsFrozen { get; private set; }
         public GoldWallet Gold { get; } = new GoldWallet();
         // 아이템 칸이야. 상점에서 사면 여기에 들어오고, 공이 날아가는 동안 꺼내 써.
         public ItemSlot Items { get; } = new ItemSlot();
@@ -109,14 +112,19 @@ namespace ElementalBreaker
             poolRoot = new GameObject("Brick Pool").transform;
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(poolRoot.gameObject, gameObject.scene);
             // 벽돌 이펙트도 같은 이유로 씬에 바로 두고, 실행 중에 한 번만 만들어.
+            // 벽돌 한 칸은 벽돌(+0), 얼음 서리막(+1), 아이콘(+2), 숫자(+3)를 써서, 이펙트는 그 위(+1부터 센 순서)에 그려.
+            int effectOrder = visual.sortingOrder + 1;
             Effects = new GameObject("Brick Effects").AddComponent<BrickEffects>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(Effects.gameObject, gameObject.scene);
-            Effects.Initialize(visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
+            Effects.Initialize(visual.sharedMaterial, visual.sortingLayerID, effectOrder);
             HitStop hitStop = Effects.gameObject.AddComponent<HitStop>();
             BombEffects bombEffects = new GameObject("Bomb Effects").AddComponent<BombEffects>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(bombEffects.gameObject, gameObject.scene);
-            bombEffects.Initialize(this, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
+            bombEffects.Initialize(this, visual.sharedMaterial, visual.sortingLayerID, effectOrder);
             bomb = new BombItem(this, launcher, hitStop, bombEffects);
+            Ice = new GameObject("Ice Effects").AddComponent<IceEffects>();
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(Ice.gameObject, gameObject.scene);
+            Ice.Initialize(this, launcher, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
             if (brickTemplate.gameObject.scene.IsValid())
                 brickTemplate.gameObject.SetActive(false);
             if (pickupTemplate != null && pickupTemplate.gameObject.scene.IsValid())
@@ -174,10 +182,15 @@ namespace ElementalBreaker
         public int BombRadius => bombRadius;
         // 칸 하나의 월드 크기야. 폭발 크기를 범위 칸 수에 맞출 때 써.
         public Vector2 CellSize => cellSize;
+        public int Rows => rows;
+        public int Columns => columns;
+        // 벽돌 칸 전체의 월드 사각형이야.
+        public Rect BoardRect => new Rect(boardCenter - boardSize * 0.5f, boardSize);
 
         // 상점의 "벽돌 속성 변경"이야. 보드에 있는 모든 벽돌을 target 속성으로 바꿔.
         public void ChangeAllBrickElements(ElementType target)
         {
+            GameAudio.Play(SoundCue.BoardChange);
             for (int r = 0; r < rows; r++)
                 for (int c = 0; c < columns; c++)
                     if (cells[r, c] != null)
@@ -187,16 +200,40 @@ namespace ElementalBreaker
         // 폭탄 기본 데미지 = 턴 ÷ divisor(올림). 최소 1이야.
         public int BombDamage(int divisor) => Mathf.Max(1, Mathf.CeilToInt(TurnNumber / (float)Mathf.Max(1, divisor)));
 
-        // 아이템 칸의 아이템을 써. 공이 날아가는 중에만 쓸 수 있어.
+        // 지금 아이템 칸의 아이템을 쓸 수 있는지야.
+        // 폭탄은 공이 날아가는 중에만, 얼음은 조준 중(발사 전)이나 공이 날아가는 중에 한 턴에 한 번 쓸 수 있어.
+        public bool CanUseHeldItem
+        {
+            get
+            {
+                if (!initialized || IsGameOver || IsProcessing)
+                    return false;
+                switch (Items.Held)
+                {
+                    case ItemType.Bomb:
+                        return launcher.IsTurnActive && launcher.FlyingBallCount > 0;
+                    case ItemType.Ice:
+                        return !IsFrozen && (launcher.CanPrepare || launcher.IsTurnActive);
+                    default:
+                        return false;
+                }
+            }
+        }
+
         public bool UseHeldItem()
         {
-            if (!initialized || IsGameOver || Items.IsEmpty || !launcher.IsTurnActive || launcher.FlyingBallCount == 0)
+            if (!CanUseHeldItem)
                 return false;
             bool used = false;
             switch (Items.Held)
             {
                 case ItemType.Bomb:
                     used = bomb.Detonate(bombRadius, bombDamageDivisor, bombCrossMultiplier, bombHitStopTime, bombHitStopScale);
+                    break;
+                case ItemType.Ice:
+                    IsFrozen = true;
+                    Ice.PlayFreeze(launcher.LaunchPosition);
+                    used = true;
                     break;
             }
             if (used)
@@ -220,6 +257,12 @@ namespace ElementalBreaker
             lastProcessedTurn = launcher.CompletedTurnCount;
             launcher.SetInputBlocked(true);
             IsProcessing = true;
+            // 얼음을 쓴 턴이면 내려오지 않아. 서리가 빛나고 가루로 풀리는 연출이 끝나면 다음 턴으로 넘어가.
+            if (IsFrozen)
+            {
+                Ice.PlayRelease(FinishFrozenTurn);
+                return;
+            }
             descentElapsed = 0f;
             DescentCount++;
             // 아래부터 옮겨서 같은 벽돌이 두 번 이동하지 않게 해.
@@ -243,8 +286,19 @@ namespace ElementalBreaker
 
         private void Update()
         {
-            if (IsProcessing)
+            if (IsProcessing && !IsFrozen)
                 AdvanceDescent(Time.deltaTime);
+        }
+
+        // 얼음 턴의 끝이야. 벽돌은 그 자리에 있고 새 줄도 없이, 턴 수만 올리고 다음 턴을 열어.
+        private void FinishFrozenTurn()
+        {
+            if (!IsProcessing || IsGameOver)
+                return;
+            IsFrozen = false;
+            IsProcessing = false;
+            TurnNumber++;
+            launcher.SetInputBlocked(false);
         }
 
         private void AdvanceDescent(float deltaTime)
@@ -278,6 +332,7 @@ namespace ElementalBreaker
                 if (cells[row, column] == null)
                     continue;
                 IsGameOver = true;
+                GameAudio.Play(SoundCue.GameOver);
                 Debug.Log("게임 오버: 벽돌이 위험 행에 도달했어.", this);
                 GameOver?.Invoke();
                 return;
@@ -343,6 +398,7 @@ namespace ElementalBreaker
             ReturnPickup(pickup);
             launcher.AddBall();
             launcher.ReserveNextElement(element);
+            GameAudio.Play(SoundCue.Pickup);
         }
 
         private void ReturnPickup(BoardPickup pickup)

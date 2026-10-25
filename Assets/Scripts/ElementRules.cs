@@ -106,6 +106,9 @@ namespace ElementalBreaker
         // 이펙트용 작은 이미지야. 같은 이미지를 여러 곳에서 불러도 캐시에서 하나를 같이 써.
         public static Sprite LoadEffectSprite(string name) => LoadSprite("fx_" + name);
 
+        // 화면에 붙는 작은 판(얼음 상태 표시 등)이야.
+        public static Sprite LoadUiSprite(string name) => LoadSprite("ui_" + name);
+
         public static Color GetBrickTint(ElementType element) => BrickTints[(int)element];
 
         // fade가 1에 가까울수록 흰색 쪽으로 연해져.

@@ -68,6 +68,7 @@ namespace ElementalBreaker
                 return;
             }
 
+            GameAudio.Play(SoundCue.Click);
             restarting = true;
             restartButton.interactable = false;
             try

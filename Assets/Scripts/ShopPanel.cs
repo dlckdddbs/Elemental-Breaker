@@ -89,7 +89,7 @@ namespace ElementalBreaker
                 iceCard.buyButton.onClick.AddListener(BuyIce);
             if (brickChangeCard.buyButton != null)
                 brickChangeCard.buyButton.onClick.AddListener(BuyBrickChange);
-            Close();
+            CloseSilently();
         }
 
         private void Toggle()
@@ -108,6 +108,7 @@ namespace ElementalBreaker
                 dimOverlay.gameObject.SetActive(true);
             dirty = true;
             PlayOpen();
+            GameAudio.Play(SoundCue.ShopOpen);
         }
 
         private void CacheCard(int index, Card card)
@@ -140,6 +141,13 @@ namespace ElementalBreaker
 
         public void Close()
         {
+            if (IsOpen)
+                GameAudio.Play(SoundCue.ShopClose);
+            CloseSilently();
+        }
+
+        private void CloseSilently()
+        {
             // 닫기는 바로 해. 남은 연출은 끝 상태로 맞춰서 다음에 열 때 자리가 어긋나지 않게 해.
             if (list != null)
                 list.transform.DOKill(true);
@@ -155,16 +163,17 @@ namespace ElementalBreaker
 
         private void BuyBomb() => BuyStored(ItemType.Bomb, BombPrice, ref bombBought);
 
-        private void BuyIce()
-        {
-            // 얼음 기능은 아직이라 카드만 보여 줘.
-        }
+        private void BuyIce() => BuyStored(ItemType.Ice, IcePrice, ref iceBought);
 
         private void BuyStored(ItemType item, int price, ref int bought)
         {
             if (!CanShop() || !board.Items.IsEmpty || !board.Gold.TrySpend(price))
+            {
+                GameAudio.Play(SoundCue.Denied);
                 return;
+            }
             board.Items.TryGive(item);
+            GameAudio.Play(SoundCue.Purchase);
             bought++;
             dirty = true;
         }
@@ -174,12 +183,15 @@ namespace ElementalBreaker
             ElementType element = launcher.TurnElement;
             if (!CanShop() || element == ElementType.Normal || brickChangeUsedTurn == board.TurnNumber ||
                 !board.Gold.TrySpend(BrickChangePrice))
+            {
+                GameAudio.Play(SoundCue.Denied);
                 return;
+            }
             board.ChangeAllBrickElements(ElementRules.WeakTo(element));
             brickChangeUsedTurn = board.TurnNumber;
             brickChangeBought++;
             // 바로 적용 아이템은 상점을 닫아서 벽돌이 바뀌는 모습이 가려지지 않게 해.
-            Close();
+            CloseSilently();
         }
 
         private bool CanShop() => board != null && launcher != null && launcher.CanPrepare && !board.IsGameOver;
@@ -227,7 +239,8 @@ namespace ElementalBreaker
                 bombCard.iconOverlay.enabled = false;
             SetCard(bombCard, BombPrice, slotFull ? "아이템 칸이 차 있어요" : gold < BombPrice ? "골드가 부족해요" : null,
                 "3x3 폭발, 십자 2배");
-            SetCard(iceCard, IcePrice, "곧 추가돼요", "이번 턴 벽돌이 안 내려옴");
+            SetCard(iceCard, IcePrice, slotFull ? "아이템 칸이 차 있어요" : gold < IcePrice ? "골드가 부족해요" : null,
+                "이번 턴 벽돌이 안 내려옴");
 
             // 벽돌 속성 변경: 지금 공에 약한 벽돌 그림을 보여 줘. 일반 공이면 쓸 수 없어.
             ElementType target = ElementRules.WeakTo(element);

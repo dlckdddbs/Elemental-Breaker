@@ -1,0 +1,9 @@
+﻿file,original,source,selection_basis,reason,duration,peak_db,rms_db
+ball_retire.wav,ball_retrie5.wav,C:\Users\fddt\Downloads\SoundCandidates\ball_retire\ball_retrie5.wav,User-requested replacement; waveform checked; not auditioned,Candidate 5 replaces candidate 3; original audio unchanged,0.486,-8.5,-31.0
+board_element_change.wav,board_element_change_4.wav,C:\Users\fddt\Downloads\SoundCandidates\board_element_change\board_element_change_4.wav,Waveform analysis only; not auditioned,Immediate onset; more peak headroom than other candidates; clean tail,0.686,-2.8,-20.2
+bomb_fire.wav,bomb_fire_4.wav,C:\Users\fddt\Downloads\SoundCandidates\bomb_fire\bomb_fire_4.wav,Waveform analysis only; not auditioned,Immediate onset; near-silent tail; compact decay,0.686,-0.7,-17.0
+bomb_grass.wav,bomb_grass_3.wav,C:\Users\fddt\Downloads\SoundCandidates\bomb_grass\bomb_grass_3.wav,Waveform analysis only; not auditioned,Immediate onset; strongest RMS among grass bomb candidates; low tail,0.686,-0.7,-20.4
+bomb_normal.wav,bomb_normal_2.wav,C:\Users\fddt\Downloads\SoundCandidates\bomb_normal\bomb_normal_2.wav,Waveform analysis only; not auditioned,Longer energy envelope and stronger RMS for main explosion,0.607,-1.1,-17.6
+bomb_water.wav,bomb_water_2.wav,C:\Users\fddt\Downloads\SoundCandidates\bomb_water\bomb_water_2.wav,Waveform analysis only; not auditioned,Strongest RMS among water bomb candidates; immediate onset,0.686,-1.2,-19.1
+hit_water.wav,hit_water_2.wav,C:\Users\fddt\Downloads\SoundCandidates\hit_water\hit_water_2.wav,Waveform analysis only; not auditioned,Short active duration; low high-frequency energy; moderate peak,0.486,-6.8,-26.5
+pickup.wav,pickup_2.wav,C:\Users\fddt\Downloads\SoundCandidates\pickup\pickup_2.wav,Waveform analysis only; not auditioned,Immediate onset; moderate peak; compact decay,0.486,-6.8,-24.6

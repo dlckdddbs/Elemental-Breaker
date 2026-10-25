@@ -1,0 +1,9 @@
+﻿File relative to Assets/Audio/SFX/Kenney,Pack,Original filename,Duration seconds,Sample rate,License,Source URL,SHA256,Review status
+BrickBreak/brick_break_glass.ogg,impact,impactGlass_medium_000.ogg,0.543,44100,CC0,https://kenney.nl/assets/impact-sounds,9252d50bfb85edb17d6073c4a7806e10cdb9de56d3dbfc93a4b9727146d2df6d,Candidate; not auditioned in game
+UI/ui_click.ogg,interface,click_001.ogg,0.1,44100,CC0,https://kenney.nl/assets/interface-sounds,ccfb7fa0cccdd9faec0eb16033c732b1e308d139d80f799161495d58f7adcdb9,Candidate; not auditioned in game
+UI/ui_select.ogg,interface,select_001.ogg,0.043,44100,CC0,https://kenney.nl/assets/interface-sounds,aec0c31ea934a35936ae0d2ab8fac8123c93aa5647f935853a58dbaf90278b7a,Candidate; not auditioned in game
+UI/shop_open.ogg,interface,open_001.ogg,0.148,44100,CC0,https://kenney.nl/assets/interface-sounds,a27c6bb0df7da1e6af5dd5937593c98bc58b6e513f42fe6a3254cd6a6949c648,Candidate; not auditioned in game
+UI/shop_close.ogg,interface,close_001.ogg,0.148,44100,CC0,https://kenney.nl/assets/interface-sounds,44af8249b933e0fd35ec957a638bb1a0b01f85b53fbe9674bf77bd3ca3168ef4,Candidate; not auditioned in game
+UI/purchase_success.ogg,interface,confirmation_001.ogg,0.29,44100,CC0,https://kenney.nl/assets/interface-sounds,063564703b6094d70718a3e787a55cc9141611e4ecd6b6637f8828f79b4a8c3a,Candidate; not auditioned in game
+UI/purchase_denied.ogg,interface,error_001.ogg,0.165,44100,CC0,https://kenney.nl/assets/interface-sounds,46e67425d16339772e8d328fb36a49426c9467418686e11beeb71ff84b0f6433,Candidate; not auditioned in game
+GameOver/game_over_down_candidate.ogg,digital,lowDown.ogg,0.784,44100,CC0,https://kenney.nl/assets/digital-audio,e0215fcfd8b9d7877f74d5c46b239a13d7db0d25998da97b80404931ef9eef5d,Candidate; not auditioned in game

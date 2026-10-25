@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace ElementalBreaker
 {
-    // 왼쪽 아래 아이템 칸이야. 들고 있는 아이템을 보여 주고, 공이 날아가는 동안 누르면 써.
+    // 왼쪽 아래 아이템 칸이야. 들고 있는 아이템을 보여 주고, 쓸 수 있을 때 누르면 써.
     public sealed class ItemSlotButton : MonoBehaviour
     {
         // 쓸 수 있을 때 테두리 빛이 숨 쉬듯 깜빡여. 밝음 → 어두움까지 걸리는 시간과 가장 어두울 때 투명도야.
@@ -40,7 +40,7 @@ namespace ElementalBreaker
         private void OnClick()
         {
             if (board != null)
-                board.UseHeldItem();
+                GameAudio.Play(board.UseHeldItem() ? SoundCue.Click : SoundCue.Denied);
         }
 
         private void LateUpdate()
@@ -49,7 +49,8 @@ namespace ElementalBreaker
                 return;
             ItemType item = board.Items.Held;
             ElementType element = launcher.TurnElement;
-            bool usable = item != ItemType.None && launcher.IsTurnActive && launcher.FlyingBallCount > 0 && !board.IsGameOver;
+            // 폭탄은 공이 날아가는 중에만, 얼음은 조준 중에도 쓸 수 있어. 규칙은 보드가 정해.
+            bool usable = board.CanUseHeldItem;
             if (item == shownItem && element == shownElement && (usable ? 1 : 0) == shownUsable)
                 return;
             bool arrived = shownItem == ItemType.None && item != ItemType.None;

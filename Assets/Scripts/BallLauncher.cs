@@ -19,7 +19,6 @@ namespace ElementalBreaker
         [SerializeField] private LineRenderer aimLine;
         [SerializeField, Min(1f)] private float minimumDragPixels = 20f;
         [SerializeField, Range(1f, 80f)] private float minimumLaunchAngle = 10f;
-        [SerializeField, Min(0.1f)] private float aimLineLength = 3f;
         [SerializeField, Min(0.01f)] private float aimLineWidth = 0.04f;
         [SerializeField] private Color aimLineColor = new Color(0.4f, 0.9f, 1f, 1f);
         [SerializeField, Min(0.1f)] private float aimStartHeight = 2f;
@@ -37,8 +36,17 @@ namespace ElementalBreaker
         private InputAction pointerPress;
         private Vector2 dragStart;
         private bool dragging;
+        private const float FastForwardHoldSeconds = 0.25f;
+        private Pointer fastForwardPointer;
+        private UnityEngine.InputSystem.Controls.TouchControl fastForwardTouch;
+        private int fastForwardTouchId;
+        private float fastForwardPressedAt;
+        private FastForwardBadge fastForwardBadge;
+        public bool IsFastForwarding { get; private set; }
         private bool ready;
         private Material generatedAimMaterial;
+        private DottedAim dottedAim;
+        [SerializeField, Min(1f)] private float dottedAimLength = 12f;
         private readonly List<Ball> balls = new List<Ball>();
         private readonly HashSet<Ball> flyingBalls = new HashSet<Ball>();
         private readonly List<Collider2D> ballColliders = new List<Collider2D>();
@@ -96,6 +104,16 @@ namespace ElementalBreaker
         // 발사 전이라 상점이나 공 속성 선택을 쓸 수 있는 상태야.
         public bool CanPrepare => ready && !IsTurnActive && !IsInputBlocked;
 
+        // 공이 출발하는 자리야. 얼음 파동이 여기서 퍼져.
+        public Vector2 LaunchPosition => launchPoint.position;
+
+        // 얼음 상태 표시가 떠 있는 동안 ×2 배속 표시를 오른쪽으로 비켜.
+        public void SetSpeedBadgeAside(bool aside)
+        {
+            if (fastForwardBadge != null)
+                fastForwardBadge.SetAside(aside);
+        }
+
         // 발사 전에 이번 턴 공 속성을 바꿔. 대기 중인 공들의 색과 오라도 바로 바뀌어.
         public void SetTurnElement(ElementType element)
         {
@@ -137,7 +155,10 @@ namespace ElementalBreaker
         {
             IsInputBlocked = blocked;
             if (blocked)
+            {
+                CancelFastForward();
                 CancelAim();
+            }
             else if (ready && !IsTurnActive)
                 PrepareUpcomingTurn();
         }
@@ -250,6 +271,13 @@ namespace ElementalBreaker
                     aimLine != null ? aimLine.sharedMaterial : null);
             }
             ready = true;
+            if (aimLine != null)
+            {
+                dottedAim = new GameObject("Dotted Aim").AddComponent<DottedAim>();
+                dottedAim.transform.SetParent(transform, false);
+                dottedAim.Initialize(aimCamera, ball, aimLine.sharedMaterial);
+            }
+            fastForwardBadge = FastForwardBadge.Create();
             PrepareUpcomingTurn();
         }
 
@@ -327,6 +355,7 @@ namespace ElementalBreaker
             nextBallIndex = 0;
             frontBallIndex = 0;
             PendingBallCount = balls.Count;
+            launchCountdown = 0f;
             AssignTrails();
             LaunchNextBall();
         }
@@ -338,6 +367,7 @@ namespace ElementalBreaker
             nextBallIndex++;
             PendingBallCount--;
             nextBall.Prepare(turnLaunchPosition);
+            nextBall.SetSpeedMultiplier(IsFastForwarding ? 2f : 1f);
             flyingBalls.Add(nextBall);
             nextBall.Launch(turnDirection);
             // Ball 레이어가 있으면 공끼리 충돌은 레이어 설정으로 이미 꺼져 있어. 없을 때만 예전처럼 하나씩 꺼.
@@ -350,7 +380,8 @@ namespace ElementalBreaker
                         Physics2D.IgnoreCollision(nextCollider, ballColliders[i]);
                 }
             }
-            launchCountdown = Mathf.Max(0.01f, launchInterval);
+            // 남은 시간을 이어 써서 물리 프레임 반올림으로 배속이 느려지지 않게 해.
+            launchCountdown += Mathf.Max(0.01f, launchInterval);
         }
 
         private void OnBallReturned(Ball returnedBall)
@@ -387,6 +418,7 @@ namespace ElementalBreaker
                 return;
 
             IsTurnActive = false;
+            CancelFastForward();
             needsTurnPreparation = true;
             CompletedTurnCount++;
             CancelAim();
@@ -400,13 +432,14 @@ namespace ElementalBreaker
             if (!IsTurnActive || PendingBallCount == 0)
                 return;
 
-            launchCountdown -= Time.fixedDeltaTime;
-            if (launchCountdown <= 0f)
+            launchCountdown -= Time.fixedDeltaTime * (IsFastForwarding ? 2f : 1f);
+            while (PendingBallCount > 0 && launchCountdown <= 0.000001f)
                 LaunchNextBall();
         }
 
         private void Update()
         {
+            UpdateFastForward();
             if (!ready || IsTurnActive || IsInputBlocked)
             {
                 CancelAim();
@@ -429,14 +462,12 @@ namespace ElementalBreaker
                 return;
 
             bool valid = TryAimDirection(screenPosition, out Vector2 direction);
-            if (aimLine != null)
+            if (dottedAim != null)
             {
-                aimLine.enabled = valid;
                 if (valid)
-                {
-                    aimLine.SetPosition(0, launchPoint.position);
-                    aimLine.SetPosition(1, launchPoint.position + (Vector3)(direction * aimLineLength));
-                }
+                    dottedAim.Show(launchPoint.position, direction, dottedAimLength);
+                else
+                    dottedAim.Hide();
             }
 
             if (pointerPress.WasReleasedThisFrame())
@@ -482,6 +513,8 @@ namespace ElementalBreaker
         private void CancelAim()
         {
             dragging = false;
+            if (dottedAim != null)
+                dottedAim.Hide();
             if (aimLine != null)
                 aimLine.enabled = false;
         }
@@ -489,11 +522,93 @@ namespace ElementalBreaker
         private void OnApplicationFocus(bool focused)
         {
             if (!focused)
+            {
+                CancelFastForward();
                 CancelAim();
+            }
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (!paused)
+                return;
+            CancelFastForward();
+            CancelAim();
+        }
+
+        private void UpdateFastForward()
+        {
+            if (!ready || !IsTurnActive || IsInputBlocked || FlyingBallCount == 0 || !Application.isFocused)
+            {
+                CancelFastForward();
+                return;
+            }
+            if (pointerPress.WasPressedThisFrame())
+            {
+                CancelFastForward();
+                Pointer pointer = pointerPress.activeControl?.device as Pointer;
+                if (pointer == null)
+                    return;
+                Vector2 position = pointer.position.ReadValue();
+                // UI나 벽돌 위에서 시작한 누름은 배속으로 쓰지 않아.
+                if (!aimCamera.pixelRect.Contains(position) || IsPointerOverUI(position) ||
+                    !TryWorldPoint(position, out Vector2 world) || Physics2D.OverlapPoint(world) != null)
+                    return;
+                fastForwardPointer = pointer;
+                fastForwardTouchId = pointer is Touchscreen touch ? touch.primaryTouch.touchId.ReadValue() : -1;
+                if (pointer is Touchscreen touchscreen)
+                {
+                    foreach (var contact in touchscreen.touches)
+                        if (contact.press.isPressed && contact.touchId.ReadValue() == fastForwardTouchId)
+                        {
+                            fastForwardTouch = contact;
+                            break;
+                        }
+                    if (fastForwardTouch == null)
+                    {
+                        CancelFastForward();
+                        return;
+                    }
+                }
+                fastForwardPressedAt = Time.unscaledTime;
+            }
+            if (fastForwardPointer == null)
+                return;
+            Vector2 current = fastForwardTouch != null
+                ? fastForwardTouch.position.ReadValue() : fastForwardPointer.position.ReadValue();
+            if (!fastForwardPointer.added || !fastForwardPointer.press.isPressed ||
+                (fastForwardTouch != null &&
+                 (fastForwardTouch.touchId.ReadValue() != fastForwardTouchId || !fastForwardTouch.press.isPressed)) ||
+                !aimCamera.pixelRect.Contains(current) || IsPointerOverUI(current))
+            {
+                CancelFastForward();
+                return;
+            }
+            if (Time.unscaledTime - fastForwardPressedAt >= FastForwardHoldSeconds)
+                SetFastForward(true);
+        }
+
+        private void CancelFastForward()
+        {
+            fastForwardPointer = null;
+            fastForwardTouch = null;
+            SetFastForward(false);
+        }
+
+        private void SetFastForward(bool active)
+        {
+            if (IsFastForwarding == active)
+                return;
+            IsFastForwarding = active;
+            foreach (Ball flyingBall in flyingBalls)
+                flyingBall.SetSpeedMultiplier(active ? 2f : 1f);
+            if (fastForwardBadge != null)
+                fastForwardBadge.SetVisible(active);
         }
 
         private void OnDisable()
         {
+            CancelFastForward();
             CancelAim();
             pointerPosition?.Disable();
             pointerPress?.Disable();
@@ -501,6 +616,8 @@ namespace ElementalBreaker
 
         private void OnDestroy()
         {
+            if (fastForwardBadge != null)
+                Destroy(fastForwardBadge.gameObject);
             foreach (Ball pooledBall in balls)
             {
                 if (pooledBall == null)

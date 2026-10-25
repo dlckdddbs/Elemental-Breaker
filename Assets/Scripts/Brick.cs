@@ -13,6 +13,11 @@ namespace ElementalBreaker
         [SerializeField, Min(0f)] private float iconInset = 0.04f;
 
         private const string IconName = "Element Icon";
+        private const string FrostName = "Frost Film";
+        private static readonly int FrostProgressId = Shader.PropertyToID("_Progress");
+        private static readonly int FrostGlowId = Shader.PropertyToID("_Glow");
+        private static readonly int FrostSheenId = Shader.PropertyToID("_Sheen");
+        private static readonly int FrostFadeId = Shader.PropertyToID("_Fade");
         // 맞을 때 찌그러졌다 돌아오는 시간이야.
         private const float HitPoseTime = 0.12f;
         // 맞는 순간 흰색으로 섞이는 비율이야.
@@ -31,6 +36,9 @@ namespace ElementalBreaker
         private BoxCollider2D hitbox;
         private SpriteRenderer visual;
         private SpriteRenderer icon;
+        // 얼음 아이템의 서리막이야. 처음 얼 때 한 번만 만들어.
+        private SpriteRenderer frost;
+        private MaterialPropertyBlock frostBlock;
         private bool destroyed;
         private BrickBoard board;
         private Vector2 baseSize;
@@ -49,6 +57,9 @@ namespace ElementalBreaker
         public int Column { get; private set; } = -1;
         public int Health { get; private set; }
         public ElementType Element { get; private set; }
+        public bool IsFrozen => frost != null && frost.enabled;
+        // 보이는 벽돌 크기(월드)야.
+        public Vector2 Size => baseSize;
 
         private void Awake()
         {
@@ -85,13 +96,48 @@ namespace ElementalBreaker
             icon.transform.SetParent(transform, false);
             icon.sharedMaterial = visual.sharedMaterial;
             icon.sortingLayerID = visual.sortingLayerID;
-            icon.sortingOrder = visual.sortingOrder + 1;
-            // 숫자는 벽돌과 아이콘 위에 그려.
+            // 그리는 순서: 벽돌(+0) → 얼음 서리막(+1) → 속성 아이콘(+2) → 숫자(+3). 서리가 아이콘과 숫자를 가리지 않아.
+            icon.sortingOrder = visual.sortingOrder + 2;
             if (healthLabel != null && healthLabel.TryGetComponent(out Renderer labelRenderer))
             {
                 labelRenderer.sortingLayerID = visual.sortingLayerID;
-                labelRenderer.sortingOrder = visual.sortingOrder + 2;
+                labelRenderer.sortingOrder = visual.sortingOrder + 3;
             }
+        }
+
+        // 얼음 서리막을 보여 줘. progress는 퍼진 정도(0~1.1), glow는 빛남, sheen은 광택 위치(음수면 없음), fade는 투명도야.
+        public void SetFrost(Sprite film, Material material, float progress, float glow, float sheen, float fade)
+        {
+            if (destroyed || film == null)
+                return;
+            if (frost == null)
+            {
+                frost = new GameObject(FrostName).AddComponent<SpriteRenderer>();
+                frost.transform.SetParent(transform, false);
+                frost.sortingLayerID = visual.sortingLayerID;
+                frost.sortingOrder = visual.sortingOrder + 1;
+                frostBlock = new MaterialPropertyBlock();
+            }
+            if (frost.sprite != film)
+                frost.sprite = film;
+            if (frost.sharedMaterial != material)
+                frost.sharedMaterial = material;
+            // 서리막 이미지는 벽돌과 같은 크기(180x131)라 벽돌 크기에 맞춰 살짝만 늘려.
+            Vector2 filmSize = film.rect.size / film.pixelsPerUnit;
+            frost.transform.localScale = new Vector3(baseSize.x / filmSize.x, baseSize.y / filmSize.y, 1f);
+            frost.GetPropertyBlock(frostBlock);
+            frostBlock.SetFloat(FrostProgressId, progress);
+            frostBlock.SetFloat(FrostGlowId, glow);
+            frostBlock.SetFloat(FrostSheenId, sheen);
+            frostBlock.SetFloat(FrostFadeId, fade);
+            frost.SetPropertyBlock(frostBlock);
+            frost.enabled = true;
+        }
+
+        public void HideFrost()
+        {
+            if (frost != null)
+                frost.enabled = false;
         }
 
         public void Spawn(BrickBoard owner, int row, int column, int health, Vector2 size,
@@ -105,6 +151,7 @@ namespace ElementalBreaker
             Health = Mathf.Max(1, health);
             destroyed = false;
             EnsureIcon();
+            HideFrost();
 
             // 스케일 대신 9-slice로 늘려서 모서리와 아이콘, 숫자가 찌그러지지 않게 해.
             Sprite baseSprite = ElementRules.GetBrickSprite();
@@ -170,6 +217,7 @@ namespace ElementalBreaker
         {
             destroyed = true;
             hitbox.enabled = false;
+            HideFrost();
             Row = Column = -1;
             gameObject.SetActive(false);
         }
@@ -197,6 +245,13 @@ namespace ElementalBreaker
                 return;
 
             Health = Mathf.Max(0, Health - damage);
+            if (!fromBomb)
+            {
+                if (Health == 0)
+                    GameAudio.Play(SoundCue.Break);
+                else
+                    GameAudio.Hit(attacker);
+            }
             RefreshLabel();
             BrickEffects effects = board != null ? board.Effects : null;
             if (Health > 0)
@@ -228,6 +283,9 @@ namespace ElementalBreaker
                 board.AwardBreak(advantage);
             if (effects != null)
                 effects.PlayBreak(transform.position, baseSize, Element, advantage, attacker, fromBomb, point);
+            // 얼어 있던 벽돌은 서리도 같이 사라지며 얼음 조각이 튀어.
+            if (IsFrozen && board != null && board.Ice != null)
+                board.Ice.PlayShatter(transform.position, baseSize);
             if (board != null)
                 board.Release(this);
             else

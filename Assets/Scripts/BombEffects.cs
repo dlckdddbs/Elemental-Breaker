@@ -375,6 +375,7 @@ namespace ElementalBreaker
         private void Release()
         {
             released = true;
+            GameAudio.Bomb(blastElement);
             for (int i = 0; i < RayCount; i++)
                 rayRenderers[i].enabled = true;
             for (int i = 0; i < SparkCount; i++)

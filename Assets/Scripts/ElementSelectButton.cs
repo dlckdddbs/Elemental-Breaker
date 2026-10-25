@@ -63,6 +63,7 @@ namespace ElementalBreaker
             if (shop != null)
                 shop.Close();
             popover.SetActive(true);
+            GameAudio.Play(SoundCue.Click);
             if (closeBlocker != null)
                 closeBlocker.gameObject.SetActive(true);
             shownElement = -1;
@@ -91,8 +92,15 @@ namespace ElementalBreaker
                 return;
             }
             // 같은 속성을 다시 고르면 골드를 쓰지 않고 닫아.
-            if (element != launcher.TurnElement && board.Gold.TrySpend(price))
+            if (element == launcher.TurnElement)
+                GameAudio.Play(SoundCue.Select);
+            else if (board.Gold.TrySpend(price))
+            {
                 launcher.SetTurnElement(element);
+                GameAudio.Play(SoundCue.Purchase);
+            }
+            else
+                GameAudio.Play(SoundCue.Denied);
             Close();
         }
 

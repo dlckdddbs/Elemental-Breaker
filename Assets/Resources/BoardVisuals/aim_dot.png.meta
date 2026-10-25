@@ -1,0 +1,2718 @@
+fileFormatVersion: 2
+guid: 9ff73b027750d7940bab1fcab980aea6
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 731162935805701103
+    second: aim_dot_0
+  - first:
+      213: 309008237838941756
+    second: aim_dot_1
+  - first:
+      213: -973814355583281710
+    second: aim_dot_2
+  - first:
+      213: -6949549000776955687
+    second: aim_dot_3
+  - first:
+      213: 3327267184588064530
+    second: aim_dot_4
+  - first:
+      213: -6419285096800403414
+    second: aim_dot_5
+  - first:
+      213: 2467558336494057770
+    second: aim_dot_6
+  - first:
+      213: 2375193360399207187
+    second: aim_dot_7
+  - first:
+      213: -1302748170676382905
+    second: aim_dot_8
+  - first:
+      213: 4191585336773343202
+    second: aim_dot_9
+  - first:
+      213: -3124197057181135256
+    second: aim_dot_10
+  - first:
+      213: 6228148781803532981
+    second: aim_dot_11
+  - first:
+      213: 7179372957391106834
+    second: aim_dot_12
+  - first:
+      213: 783765905469617734
+    second: aim_dot_13
+  - first:
+      213: 6042218085175145926
+    second: aim_dot_14
+  - first:
+      213: -3118994922974747629
+    second: aim_dot_15
+  - first:
+      213: -8101454309769274132
+    second: aim_dot_16
+  - first:
+      213: 3585531211500780135
+    second: aim_dot_17
+  - first:
+      213: -4466275540241931510
+    second: aim_dot_18
+  - first:
+      213: -2632975105945746268
+    second: aim_dot_19
+  - first:
+      213: -6885867041284108732
+    second: aim_dot_20
+  - first:
+      213: -8465917504758165138
+    second: aim_dot_21
+  - first:
+      213: -1520289088527131931
+    second: aim_dot_22
+  - first:
+      213: -3283747833010248244
+    second: aim_dot_23
+  - first:
+      213: 8423857257488747455
+    second: aim_dot_24
+  - first:
+      213: -5691131728889000647
+    second: aim_dot_25
+  - first:
+      213: -9184021212820821600
+    second: aim_dot_26
+  - first:
+      213: 7688716869730829964
+    second: aim_dot_27
+  - first:
+      213: 2351702709324845749
+    second: aim_dot_28
+  - first:
+      213: -6317675176510607624
+    second: aim_dot_29
+  - first:
+      213: 6595666924388714434
+    second: aim_dot_30
+  - first:
+      213: 7243496990655102306
+    second: aim_dot_31
+  - first:
+      213: -5446346494376471865
+    second: aim_dot_32
+  - first:
+      213: -3403426850591975005
+    second: aim_dot_33
+  - first:
+      213: -4290555760116658681
+    second: aim_dot_34
+  - first:
+      213: -6961726402928089828
+    second: aim_dot_35
+  - first:
+      213: 6483258528248880729
+    second: aim_dot_36
+  - first:
+      213: 7787919249372144199
+    second: aim_dot_37
+  - first:
+      213: -791890729511549094
+    second: aim_dot_38
+  - first:
+      213: 7546618937240100874
+    second: aim_dot_39
+  - first:
+      213: -4105387590656436301
+    second: aim_dot_40
+  - first:
+      213: -4873033960315289639
+    second: aim_dot_41
+  - first:
+      213: 4876027026272387592
+    second: aim_dot_42
+  - first:
+      213: 4454269621626493358
+    second: aim_dot_43
+  - first:
+      213: 2024666849348393804
+    second: aim_dot_44
+  - first:
+      213: 1904097256876278846
+    second: aim_dot_45
+  - first:
+      213: -271383883321522556
+    second: aim_dot_46
+  - first:
+      213: -5492304592996156171
+    second: aim_dot_47
+  - first:
+      213: -644023311955957269
+    second: aim_dot_48
+  - first:
+      213: -6158574166066010329
+    second: aim_dot_49
+  - first:
+      213: -6947062275680499260
+    second: aim_dot_50
+  - first:
+      213: 2073537094402166463
+    second: aim_dot_51
+  - first:
+      213: -4691071837900105395
+    second: aim_dot_52
+  - first:
+      213: -7258298275308821482
+    second: aim_dot_53
+  - first:
+      213: -5292443360154923554
+    second: aim_dot_54
+  - first:
+      213: 6510472144476031421
+    second: aim_dot_55
+  - first:
+      213: 5488852998385461255
+    second: aim_dot_56
+  - first:
+      213: 774880621690356282
+    second: aim_dot_57
+  - first:
+      213: 6810348547259170309
+    second: aim_dot_58
+  - first:
+      213: -5384627101398197606
+    second: aim_dot_59
+  - first:
+      213: -3345497578630510949
+    second: aim_dot_60
+  - first:
+      213: 4224757934337740499
+    second: aim_dot_61
+  - first:
+      213: -3981255082271366878
+    second: aim_dot_62
+  - first:
+      213: 448249407926599676
+    second: aim_dot_63
+  - first:
+      213: 7321924250222892511
+    second: aim_dot_64
+  - first:
+      213: -3015001406761436761
+    second: aim_dot_65
+  - first:
+      213: 4570184822327811304
+    second: aim_dot_66
+  - first:
+      213: -1701635468298709466
+    second: aim_dot_67
+  - first:
+      213: 1125438305449766278
+    second: aim_dot_68
+  - first:
+      213: -5516149673216993726
+    second: aim_dot_69
+  - first:
+      213: -442926361846758662
+    second: aim_dot_70
+  - first:
+      213: -2477889326234950570
+    second: aim_dot_71
+  - first:
+      213: -5305323479462845861
+    second: aim_dot_72
+  - first:
+      213: -3176746506581517346
+    second: aim_dot_73
+  - first:
+      213: -1464103252198811303
+    second: aim_dot_74
+  - first:
+      213: -4319179083435205880
+    second: aim_dot_75
+  - first:
+      213: -7591634788047133432
+    second: aim_dot_76
+  - first:
+      213: -2316184537498210357
+    second: aim_dot_77
+  - first:
+      213: -3284080014297674109
+    second: aim_dot_78
+  - first:
+      213: 4105830112011095347
+    second: aim_dot_79
+  - first:
+      213: 220561884872599331
+    second: aim_dot_80
+  - first:
+      213: 736900023689315793
+    second: aim_dot_81
+  - first:
+      213: -2342065077241294177
+    second: aim_dot_82
+  - first:
+      213: 1012464402877059963
+    second: aim_dot_83
+  - first:
+      213: -3280847900008935887
+    second: aim_dot_84
+  - first:
+      213: -6356178687004049403
+    second: aim_dot_85
+  - first:
+      213: -9054595999506541712
+    second: aim_dot_86
+  - first:
+      213: 5802151832843075023
+    second: aim_dot_87
+  - first:
+      213: 4576454517140399506
+    second: aim_dot_88
+  - first:
+      213: 3619121351423885648
+    second: aim_dot_89
+  - first:
+      213: -6542983919834536226
+    second: aim_dot_90
+  - first:
+      213: -972462400896219747
+    second: aim_dot_91
+  - first:
+      213: 4085454385067607923
+    second: aim_dot_92
+  - first:
+      213: 6748827907739677826
+    second: aim_dot_93
+  - first:
+      213: -6915881333881129994
+    second: aim_dot_94
+  - first:
+      213: -4395850564062611394
+    second: aim_dot_95
+  - first:
+      213: 3721763523232745738
+    second: aim_dot_96
+  - first:
+      213: -784395536100060636
+    second: aim_dot_97
+  - first:
+      213: -2538984287341046781
+    second: aim_dot_98
+  - first:
+      213: 8605285066671272235
+    second: aim_dot_99
+  - first:
+      213: 346277677995821441
+    second: aim_dot_100
+  - first:
+      213: -1647892429816620665
+    second: aim_dot_101
+  - first:
+      213: 6063435893798026249
+    second: aim_dot_102
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 128
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: aim_dot_0
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 1128
+        width: 23
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: feb61a5f0dc952a00800000000000000
+      internalID: 731162935805701103
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_1
+      rect:
+        serializedVersion: 2
+        x: 412
+        y: 1130
+        width: 55
+        height: 46
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c3e3f09ea51d94400800000000000000
+      internalID: 309008237838941756
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_2
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 1167
+        width: 11
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2d5584ac0015c72f0800000000000000
+      internalID: -973814355583281710
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_3
+      rect:
+        serializedVersion: 2
+        x: 464
+        y: 1148
+        width: 56
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9d8c48b010e3e8f90800000000000000
+      internalID: -6949549000776955687
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_4
+      rect:
+        serializedVersion: 2
+        x: 553
+        y: 1138
+        width: 130
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2178f2230e3dc2e20800000000000000
+      internalID: 3327267184588064530
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_5
+      rect:
+        serializedVersion: 2
+        x: 697
+        y: 1173
+        width: 52
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a20c04d173e1ae6a0800000000000000
+      internalID: -6419285096800403414
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_6
+      rect:
+        serializedVersion: 2
+        x: 760
+        y: 1052
+        width: 157
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a29384dbb378e3220800000000000000
+      internalID: 2467558336494057770
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_7
+      rect:
+        serializedVersion: 2
+        x: 1027
+        y: 992
+        width: 192
+        height: 198
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31b0677e6c166f020800000000000000
+      internalID: 2375193360399207187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_8
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 1039
+        width: 98
+        height: 129
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7435b07e075bbede0800000000000000
+      internalID: -1302748170676382905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_9
+      rect:
+        serializedVersion: 2
+        x: 368
+        y: 1094
+        width: 35
+        height: 66
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2e77c14e7a08b2a30800000000000000
+      internalID: 4191585336773343202
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_10
+      rect:
+        serializedVersion: 2
+        x: 681
+        y: 1146
+        width: 11
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 86ec566445f94a4d0800000000000000
+      internalID: -3124197057181135256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_11
+      rect:
+        serializedVersion: 2
+        x: 691
+        y: 1140
+        width: 30
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b27ea3a154de6650800000000000000
+      internalID: 6228148781803532981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_12
+      rect:
+        serializedVersion: 2
+        x: 327
+        y: 1107
+        width: 12
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 213b753baa142a360800000000000000
+      internalID: 7179372957391106834
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_13
+      rect:
+        serializedVersion: 2
+        x: 337
+        y: 1124
+        width: 18
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 646349e30fe70ea00800000000000000
+      internalID: 783765905469617734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_14
+      rect:
+        serializedVersion: 2
+        x: 309
+        y: 1062
+        width: 32
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6c53e4ed5554ad350800000000000000
+      internalID: 6042218085175145926
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_15
+      rect:
+        serializedVersion: 2
+        x: 948
+        y: 1096
+        width: 18
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 314e7d784aa17b4d0800000000000000
+      internalID: -3118994922974747629
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_16
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 0
+        width: 905
+        height: 1058
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cec15268a3ad19f80800000000000000
+      internalID: -8101454309769274132
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_17
+      rect:
+        serializedVersion: 2
+        x: 191
+        y: 1003
+        width: 61
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76a7490d3ad52c130800000000000000
+      internalID: 3585531211500780135
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_18
+      rect:
+        serializedVersion: 2
+        x: 675
+        y: 1018
+        width: 29
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a032dda3f0a9402c0800000000000000
+      internalID: -4466275540241931510
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_19
+      rect:
+        serializedVersion: 2
+        x: 946
+        y: 1040
+        width: 6
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a448ab571bc57bd0800000000000000
+      internalID: -2632975105945746268
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_20
+      rect:
+        serializedVersion: 2
+        x: 950
+        y: 1046
+        width: 52
+        height: 49
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44ec0b9a86c7070a0800000000000000
+      internalID: -6885867041284108732
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_21
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 1034
+        width: 27
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e61d02f32e4038a80800000000000000
+      internalID: -8465917504758165138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_22
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 1028
+        width: 17
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ea107af029d6eae0800000000000000
+      internalID: -1520289088527131931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_23
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 1011
+        width: 14
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc527717eb8cd62d0800000000000000
+      internalID: -3283747833010248244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_24
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 1020
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbb863f4b8d87e470800000000000000
+      internalID: 8423857257488747455
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_25
+      rect:
+        serializedVersion: 2
+        x: 940
+        y: 1008
+        width: 6
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93dcd9178d90501b0800000000000000
+      internalID: -5691131728889000647
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_26
+      rect:
+        serializedVersion: 2
+        x: 945
+        y: 1010
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a9a920bd5dcb8080800000000000000
+      internalID: -9184021212820821600
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_27
+      rect:
+        serializedVersion: 2
+        x: 1047
+        y: 1004
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c860cd6a14fc3ba60800000000000000
+      internalID: 7688716869730829964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_28
+      rect:
+        serializedVersion: 2
+        x: 173
+        y: 964
+        width: 33
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b291ae772de2a020800000000000000
+      internalID: 2351702709324845749
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_29
+      rect:
+        serializedVersion: 2
+        x: 321
+        y: 1004
+        width: 16
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8fe28c146eb1358a0800000000000000
+      internalID: -6317675176510607624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_30
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 986
+        width: 20
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c78bf45f14888b50800000000000000
+      internalID: 6595666924388714434
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_31
+      rect:
+        serializedVersion: 2
+        x: 107
+        y: 859
+        width: 77
+        height: 122
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26dbb93a222168460800000000000000
+      internalID: 7243496990655102306
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_32
+      rect:
+        serializedVersion: 2
+        x: 159
+        y: 730
+        width: 115
+        height: 259
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c21ff628b0ba64b0800000000000000
+      internalID: -5446346494376471865
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_33
+      rect:
+        serializedVersion: 2
+        x: 1003
+        y: 962
+        width: 29
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a9507fbf4994c0d0800000000000000
+      internalID: -3403426850591975005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_34
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 921
+        width: 41
+        height: 53
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70e8d3db442e474c0800000000000000
+      internalID: -4290555760116658681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_35
+      rect:
+        serializedVersion: 2
+        x: 1043
+        y: 956
+        width: 21
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c15630aa8baf26f90800000000000000
+      internalID: -6961726402928089828
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_36
+      rect:
+        serializedVersion: 2
+        x: 1067
+        y: 964
+        width: 29
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95edb4b184929f950800000000000000
+      internalID: 6483258528248880729
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_37
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 942
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 742e04e8b4f341c60800000000000000
+      internalID: 7787919249372144199
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_38
+      rect:
+        serializedVersion: 2
+        x: 1051
+        y: 930
+        width: 21
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a570a8eb393a205f0800000000000000
+      internalID: -791890729511549094
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_39
+      rect:
+        serializedVersion: 2
+        x: 1073
+        y: 913
+        width: 55
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a00ae6190f9fab860800000000000000
+      internalID: 7546618937240100874
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_40
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 922
+        width: 9
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b750a1dcbbb607c0800000000000000
+      internalID: -4105387590656436301
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_41
+      rect:
+        serializedVersion: 2
+        x: 1027
+        y: 899
+        width: 23
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9dffdf87e618f5cb0800000000000000
+      internalID: -4873033960315289639
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_42
+      rect:
+        serializedVersion: 2
+        x: 1057
+        y: 873
+        width: 37
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8028b200fb02ba340800000000000000
+      internalID: 4876027026272387592
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_43
+      rect:
+        serializedVersion: 2
+        x: 1109
+        y: 853
+        width: 110
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea95cd20f9eb0dd30800000000000000
+      internalID: 4454269621626493358
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_44
+      rect:
+        serializedVersion: 2
+        x: 181
+        y: 897
+        width: 24
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4b9be7b5cf091c10800000000000000
+      internalID: 2024666849348393804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_45
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 891
+        width: 9
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e3408e5ed56bc6a10800000000000000
+      internalID: 1904097256876278846
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_46
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 803
+        width: 40
+        height: 91
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 486cad4cbc9db3cf0800000000000000
+      internalID: -271383883321522556
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_47
+      rect:
+        serializedVersion: 2
+        x: 1023
+        y: 887
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5fcb738721a67c3b0800000000000000
+      internalID: -5492304592996156171
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_48
+      rect:
+        serializedVersion: 2
+        x: 1027
+        y: 722
+        width: 84
+        height: 173
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be96bcfb538ff07f0800000000000000
+      internalID: -644023311955957269
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_49
+      rect:
+        serializedVersion: 2
+        x: 1013
+        y: 859
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 727ecbcec69588aa0800000000000000
+      internalID: -6158574166066010329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_50
+      rect:
+        serializedVersion: 2
+        x: 1155
+        y: 857
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c90c89daa3179f90800000000000000
+      internalID: -6947062275680499260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_51
+      rect:
+        serializedVersion: 2
+        x: 1160
+        y: 809
+        width: 31
+        height: 59
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbecf64500fa6cc10800000000000000
+      internalID: 2073537094402166463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_52
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 744
+        width: 82
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d49102e8407f5eeb0800000000000000
+      internalID: -4691071837900105395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_53
+      rect:
+        serializedVersion: 2
+        x: 185
+        y: 823
+        width: 17
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 614236abc28554b90800000000000000
+      internalID: -7258298275308821482
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_54
+      rect:
+        serializedVersion: 2
+        x: 1123
+        y: 819
+        width: 30
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: edd4714fdc67d86b0800000000000000
+      internalID: -5292443360154923554
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_55
+      rect:
+        serializedVersion: 2
+        x: 1147
+        y: 839
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db9c193ebe7d95a50800000000000000
+      internalID: 6510472144476031421
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_56
+      rect:
+        serializedVersion: 2
+        x: 1015
+        y: 821
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7086a1988b25c2c40800000000000000
+      internalID: 5488852998385461255
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_57
+      rect:
+        serializedVersion: 2
+        x: 1043
+        y: 807
+        width: 11
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a320037e1dde0ca00800000000000000
+      internalID: 774880621690356282
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_58
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 794
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 50efaf3cbe7338e50800000000000000
+      internalID: 6810348547259170309
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_59
+      rect:
+        serializedVersion: 2
+        x: 1196
+        y: 769
+        width: 21
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9a18352e26f545b0800000000000000
+      internalID: -5384627101398197606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_60
+      rect:
+        serializedVersion: 2
+        x: 1180
+        y: 771
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b968ccc6da76291d0800000000000000
+      internalID: -3345497578630510949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_61
+      rect:
+        serializedVersion: 2
+        x: 1196
+        y: 737
+        width: 21
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3dec63225fa51aa30800000000000000
+      internalID: 4224757934337740499
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_62
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 522
+        width: 47
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2212ff4a89dbfb8c0800000000000000
+      internalID: -3981255082271366878
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_63
+      rect:
+        serializedVersion: 2
+        x: 40
+        y: 644
+        width: 27
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cff7e3a2670883600800000000000000
+      internalID: 448249407926599676
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_64
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 419
+        width: 36
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd59ad6ff43bc9560800000000000000
+      internalID: 7321924250222892511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_65
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 383
+        width: 28
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7a97ea8d1309826d0800000000000000
+      internalID: -3015001406761436761
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_66
+      rect:
+        serializedVersion: 2
+        x: 108
+        y: 425
+        width: 22
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ec1bbcc1ee8c6f30800000000000000
+      internalID: 4570184822327811304
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_67
+      rect:
+        serializedVersion: 2
+        x: 116
+        y: 364
+        width: 8
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62699d6ae839268e0800000000000000
+      internalID: -1701635468298709466
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_68
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 375
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68d63fc0d2c5e9f00800000000000000
+      internalID: 1125438305449766278
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_69
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 337
+        width: 28
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24693081913b273b0800000000000000
+      internalID: -5516149673216993726
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_70
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 289
+        width: 27
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af2c77412d86ad9f0800000000000000
+      internalID: -442926361846758662
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_71
+      rect:
+        serializedVersion: 2
+        x: 163
+        y: 345
+        width: 65
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 654a80549c4cc9dd0800000000000000
+      internalID: -2477889326234950570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_72
+      rect:
+        serializedVersion: 2
+        x: 175
+        y: 425
+        width: 35
+        height: 67
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b52e31c7764bf56b0800000000000000
+      internalID: -5305323479462845861
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_73
+      rect:
+        serializedVersion: 2
+        x: 207
+        y: 417
+        width: 27
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: edbdeb522ede9e3d0800000000000000
+      internalID: -3176746506581517346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_74
+      rect:
+        serializedVersion: 2
+        x: 213
+        y: 391
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 959123a69d57eabe0800000000000000
+      internalID: -1464103252198811303
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_75
+      rect:
+        serializedVersion: 2
+        x: 1005
+        y: 304
+        width: 7
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 80b1c82f1813f04c0800000000000000
+      internalID: -4319179083435205880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_76
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 334
+        width: 25
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 805e3f9e16815a690800000000000000
+      internalID: -7591634788047133432
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_77
+      rect:
+        serializedVersion: 2
+        x: 1035
+        y: 320
+        width: 37
+        height: 100
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bcfaa205f624bdfd0800000000000000
+      internalID: -2316184537498210357
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_78
+      rect:
+        serializedVersion: 2
+        x: 1045
+        y: 323
+        width: 7
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 38ec3d570aa9c62d0800000000000000
+      internalID: -3284080014297674109
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_79
+      rect:
+        serializedVersion: 2
+        x: 1059
+        y: 260
+        width: 35
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 33d0686bbb6daf830800000000000000
+      internalID: 4105830112011095347
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_80
+      rect:
+        serializedVersion: 2
+        x: 1065
+        y: 296
+        width: 166
+        height: 440
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32762de9dd79f0300800000000000000
+      internalID: 220561884872599331
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_81
+      rect:
+        serializedVersion: 2
+        x: 1073
+        y: 408
+        width: 19
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d58af2daaef93a00800000000000000
+      internalID: 736900023689315793
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_82
+      rect:
+        serializedVersion: 2
+        x: 1077
+        y: 345
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f925f2698305f7fd0800000000000000
+      internalID: -2342065077241294177
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_83
+      rect:
+        serializedVersion: 2
+        x: 1117
+        y: 626
+        width: 26
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b731739920ffc0e00800000000000000
+      internalID: 1012464402877059963
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_84
+      rect:
+        serializedVersion: 2
+        x: 1206
+        y: 706
+        width: 9
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 13e81e5b7361872d0800000000000000
+      internalID: -3280847900008935887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_85
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 87
+        width: 138
+        height: 204
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 500073029215ac7a0800000000000000
+      internalID: -6356178687004049403
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_86
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 258
+        width: 19
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0735db869ec975280800000000000000
+      internalID: -9054595999506541712
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_87
+      rect:
+        serializedVersion: 2
+        x: 245
+        y: 188
+        width: 13
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fcd3e71d952658050800000000000000
+      internalID: 5802151832843075023
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_88
+      rect:
+        serializedVersion: 2
+        x: 309
+        y: 143
+        width: 35
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 295a2e0e225d28f30800000000000000
+      internalID: 4576454517140399506
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_89
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 232
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05107a6b1b3b93230800000000000000
+      internalID: 3619121351423885648
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_90
+      rect:
+        serializedVersion: 2
+        x: 439
+        y: 101
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed66b278ac6a235a0800000000000000
+      internalID: -6542983919834536226
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_91
+      rect:
+        serializedVersion: 2
+        x: 735
+        y: 85
+        width: 11
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d954825499e1182f0800000000000000
+      internalID: -972462400896219747
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_92
+      rect:
+        serializedVersion: 2
+        x: 745
+        y: 93
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 37744081e1372b830800000000000000
+      internalID: 4085454385067607923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_93
+      rect:
+        serializedVersion: 2
+        x: 866
+        y: 196
+        width: 15
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 284f01ba937a8ad50800000000000000
+      internalID: 6748827907739677826
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_94
+      rect:
+        serializedVersion: 2
+        x: 882
+        y: 128
+        width: 15
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f3b249919ad500a0800000000000000
+      internalID: -6915881333881129994
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_95
+      rect:
+        serializedVersion: 2
+        x: 898
+        y: 128
+        width: 13
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e38f853c33dcef2c0800000000000000
+      internalID: -4395850564062611394
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_96
+      rect:
+        serializedVersion: 2
+        x: 904
+        y: 152
+        width: 15
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a094b44a43c56a330800000000000000
+      internalID: 3721763523232745738
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_97
+      rect:
+        serializedVersion: 2
+        x: 920
+        y: 162
+        width: 12
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4229a537a644d15f0800000000000000
+      internalID: -784395536100060636
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_98
+      rect:
+        serializedVersion: 2
+        x: 924
+        y: 128
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3041db62e37b3ccd0800000000000000
+      internalID: -2538984287341046781
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_99
+      rect:
+        serializedVersion: 2
+        x: 954
+        y: 162
+        width: 58
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b213ae5ec2d1c6770800000000000000
+      internalID: 8605285066671272235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_100
+      rect:
+        serializedVersion: 2
+        x: 973
+        y: 160
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1898696a6b93ec400800000000000000
+      internalID: 346277677995821441
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_101
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 197
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78999b4e0928129e0800000000000000
+      internalID: -1647892429816620665
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: aim_dot_102
+      rect:
+        serializedVersion: 2
+        x: 1037
+        y: 224
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90c3f28e1d6a52450800000000000000
+      internalID: 6063435893798026249
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
