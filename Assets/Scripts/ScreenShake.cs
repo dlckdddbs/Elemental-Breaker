@@ -15,12 +15,13 @@ namespace ElementalBreaker
             Camera main = Camera.main;
             if (main == null || duration <= 0f || strength <= 0f)
                 return;
-            if (target != main.transform)
+            // 흔들리던 중이면 원래 자리로 돌려놓고 새로 시작해. 멈춰 있으면 지금 자리가 원래 자리야.
+            // (화면 비율이 바뀌면 카메라 자리도 바뀌어서, 처음 자리를 계속 기억하면 안 돼.)
+            if (target != main.transform || !DOTween.IsTweening(main.transform))
             {
                 target = main.transform;
                 basePosition = target.position;
             }
-            // 흔들리던 중이면 원래 자리로 돌려놓고 새로 시작해.
             target.DOKill();
             target.position = basePosition;
             target.DOShakePosition(duration, new Vector3(strength, strength * 0.8f, 0f), vibrato, 90f, false, true,

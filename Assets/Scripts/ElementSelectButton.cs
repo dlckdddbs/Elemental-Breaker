@@ -11,6 +11,8 @@ namespace ElementalBreaker
         // 선택지가 버튼 쪽(아래 가운데)에서 커지며 나타나.
         private const float OpenScale = 0.8f;
         private const float OpenTime = 0.18f;
+        // 발사 중에는 버튼 칸을 이만큼 흐리게 해. 상점 버튼과 같은 값이야.
+        private const float DisabledAlpha = 0.4f;
 
         [SerializeField] private BrickBoard board;
         [SerializeField] private BallLauncher launcher;
@@ -18,7 +20,8 @@ namespace ElementalBreaker
         [Tooltip("속성을 한 번 바꿀 때 드는 골드")]
         [SerializeField, Min(0)] private int price = 1;
         [Header("버튼")]
-        [SerializeField] private GameObject buttonRoot;
+        [Tooltip("버튼과 라벨을 묶은 칸이야. 발사 중에는 칸째 흐리게 해.")]
+        [SerializeField] private CanvasGroup buttonGroup;
         [SerializeField] private Button button;
         [SerializeField] private Image face;
         [SerializeField] private Image icon;
@@ -112,9 +115,11 @@ namespace ElementalBreaker
             if ((canPrepare ? 1 : 0) != shownCanPrepare)
             {
                 shownCanPrepare = canPrepare ? 1 : 0;
-                // 발사 중에는 숨겨서 아래 띠를 단순하게 해.
-                if (buttonRoot != null)
-                    buttonRoot.SetActive(canPrepare);
+                // 발사 중에는 흐리게 해서 누를 수 없는 걸 보여 줘. 숨기면 아래 판 가운데 칸이 비어 보여.
+                if (buttonGroup != null)
+                    buttonGroup.alpha = canPrepare ? 1f : DisabledAlpha;
+                if (button != null)
+                    button.interactable = canPrepare;
                 if (!canPrepare)
                     Close();
             }

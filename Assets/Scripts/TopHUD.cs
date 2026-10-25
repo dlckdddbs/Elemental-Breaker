@@ -6,16 +6,22 @@ using UnityEngine.UI;
 
 namespace ElementalBreaker
 {
-    // 상단 HUD야. 턴, 이번 턴 속성과 다음 턴 예약, 골드, 공 개수를 보여 주고 값이 바뀔 때만 다시 그려.
+    // 상단 정보판이야. 두 줄로 보여 주고 값이 바뀔 때만 다시 그려.
+    // 1줄: 턴 | 이번 턴 속성 | 골드    2줄: 공 개수(+이번 턴에 얻은 공) | 다음 턴 속성
+    // 묶음마다 아이콘과 글자를 이어 붙이고, 글자 길이가 달라져도 묶음 전체가 칸 가운데에 오게 맞춰.
     public sealed class TopHUD : MonoBehaviour
     {
         private static readonly string[] ElementNames = { "일반", "불", "물", "풀" };
-        // 배지 안 여백과 아이콘 크기야. 생성 메뉴의 배치와 같은 값이야(기준 해상도 480x854 픽셀).
-        private const float BadgePadding = 18f;
-        private const float IconSize = 34f;
+        // 다음 속성 이름 색이야. 일반, 불, 물, 풀 순서로 어두운 판 위에서 잘 읽히는 밝은 속성색이야.
+        private static readonly Color32[] ElementTextColors =
+        {
+            new Color32(0xE3, 0xEC, 0xF3, 0xFF), new Color32(0xFF, 0x9B, 0x6B, 0xFF),
+            new Color32(0x7F, 0xD6, 0xFF, 0xFF), new Color32(0x8F, 0xEA, 0x6E, 0xFF)
+        };
+        // 묶음 안 간격이야(기준 해상도 480x854 픽셀).
         private const float IconGap = 8f;
-        private const float NextGap = 6f;
-        private const float AcquiredGap = 6f;
+        private const float SmallGap = 6f;
+        private const float CaptionGap = 4f;
         // 값이 바뀔 때 톡 튀는 시간과 크기야. 튕김 횟수가 적을수록 한 번 "톡" 하고 끝나.
         private const float PopTime = 0.25f;
         private const float PopScale = 0.22f;
@@ -28,16 +34,23 @@ namespace ElementalBreaker
         [SerializeField] private BrickBoard board;
         [Header("턴")]
         [SerializeField] private TMP_Text turnLabel;
-        [Header("속성 [현재 → 다음]")]
+        [Header("이번 턴 속성")]
         [SerializeField] private RectTransform elementGroup;
-        [SerializeField] private Image elementBadge;
+        [SerializeField] private Image elementCircle;
         [SerializeField] private Image elementIcon;
         [SerializeField] private TMP_Text elementName;
+        [Header("다음 턴 속성 (예약이 없으면 이번 턴과 같은 속성)")]
         [SerializeField] private RectTransform nextGroup;
+        [SerializeField] private TMP_Text nextCaption;
         [SerializeField] private Image nextCircle;
         [SerializeField] private Image nextIcon;
-        [Header("골드와 공")]
+        [SerializeField] private TMP_Text nextName;
+        [Header("골드")]
+        [SerializeField] private RectTransform goldGroup;
+        [SerializeField] private RectTransform goldIcon;
         [SerializeField] private TMP_Text goldLabel;
+        [Header("공")]
+        [SerializeField] private RectTransform ballIcon;
         [SerializeField] private TMP_Text ballLabel;
         [SerializeField] private RectTransform acquiredBadge;
         [SerializeField] private TMP_Text acquiredLabel;
@@ -48,7 +61,7 @@ namespace ElementalBreaker
         private int shownAcquired = -1;
         private bool elementShown;
         private ElementType shownElement;
-        private ElementType? shownNext;
+        private ElementType shownNext;
         // 화면에 보이는 골드야. 실제 골드를 향해 올라가.
         private int goldDisplay;
         // 숫자 트윈에 넘길 함수야. 한 번만 만들어서 골드가 바뀔 때마다 새로 할당하지 않아.
@@ -80,6 +93,8 @@ namespace ElementalBreaker
             }
             if (elementGroup != null)
                 elementGroup.DOKill(true);
+            if (nextGroup != null)
+                nextGroup.DOKill(true);
             if (acquiredBadge != null)
                 acquiredBadge.DOKill(true);
         }
@@ -97,42 +112,43 @@ namespace ElementalBreaker
         private void RefreshElement()
         {
             ElementType element = launcher.TurnElement;
-            ElementType? next = launcher.ReservedElement;
+            // 속성 아이템을 안 먹었으면 다음 턴도 이번 턴과 같은 속성이야.
+            ElementType next = launcher.ReservedElement ?? element;
             if (elementShown && element == shownElement && next == shownNext)
                 return;
-
-            // 속성 아이템을 먹어 예약이 바뀌었거나 턴이 넘어가 속성이 바뀌면 배지가 톡 튀어.
-            bool popNow = elementShown && (element != shownElement || (next.HasValue && next != shownNext));
+            bool popElement = elementShown && element != shownElement;
+            bool popNext = elementShown && next != shownNext;
             elementShown = true;
             shownElement = element;
             shownNext = next;
 
-            elementBadge.color = ElementRules.GetBrickTint(element);
+            elementCircle.color = ElementRules.GetBrickTint(element);
             elementIcon.sprite = ElementRules.GetUiIconSprite(element);
             elementName.SetText(ElementNames[(int)element]);
-            bool hasNext = next.HasValue;
-            nextGroup.gameObject.SetActive(hasNext);
-            if (hasNext)
-            {
-                nextCircle.color = ElementRules.GetBrickTint(next.Value);
-                nextIcon.sprite = ElementRules.GetUiIconSprite(next.Value);
-            }
-            LayoutElement(hasNext);
-            if (popNow)
+            LayoutRow(elementGroup, elementCircle.rectTransform, IconGap, elementName.rectTransform, elementName.preferredWidth);
+
+            nextCircle.color = ElementRules.GetBrickTint(next);
+            nextIcon.sprite = ElementRules.GetUiIconSprite(next);
+            nextName.SetText(ElementNames[(int)next]);
+            nextName.color = ElementTextColors[(int)next];
+            LayoutNext();
+            if (popElement)
                 Pop(elementGroup);
+            if (popNext)
+                Pop(nextGroup);
         }
 
-        private void LayoutElement(bool hasNext)
+        // [● 다음: 풀] 순서로 이어 붙여.
+        private void LayoutNext()
         {
-            // 배지는 현재 속성(아이콘+이름)만 감싸고, [→ 다음 속성]은 배지 밖에 붙여. 묶음 전체를 가운데에 둬.
-            float badgeWidth = BadgePadding + IconSize + IconGap + elementName.preferredWidth + BadgePadding;
-            float groupWidth = hasNext ? badgeWidth + NextGap + nextGroup.sizeDelta.x : badgeWidth;
-            float left = -groupWidth * 0.5f;
-            RectTransform badge = elementBadge.rectTransform;
-            badge.sizeDelta = new Vector2(badgeWidth, badge.sizeDelta.y);
-            badge.anchoredPosition = new Vector2(left, badge.anchoredPosition.y);
-            if (hasNext)
-                nextGroup.anchoredPosition = new Vector2(left + badgeWidth + NextGap, nextGroup.anchoredPosition.y);
+            RectTransform circle = nextCircle.rectTransform, caption = nextCaption.rectTransform, name = nextName.rectTransform;
+            float captionWidth = nextCaption.preferredWidth, nameWidth = nextName.preferredWidth;
+            float x = -(circle.sizeDelta.x + SmallGap + captionWidth + CaptionGap + nameWidth) * 0.5f;
+            circle.anchoredPosition = new Vector2(x, circle.anchoredPosition.y);
+            x += circle.sizeDelta.x + SmallGap;
+            caption.anchoredPosition = new Vector2(x, caption.anchoredPosition.y);
+            x += captionWidth + CaptionGap;
+            name.anchoredPosition = new Vector2(x, name.anchoredPosition.y);
         }
 
         private void RefreshGold()
@@ -161,6 +177,8 @@ namespace ElementalBreaker
         {
             goldDisplay = value;
             goldLabel.SetText("{0}", value);
+            // 자릿수가 바뀌어도 [동전 숫자] 묶음이 칸 가운데에 오게 해.
+            LayoutRow(goldGroup, goldIcon, SmallGap, goldLabel.rectTransform, goldLabel.preferredWidth);
         }
 
         private void RefreshBalls()
@@ -172,19 +190,32 @@ namespace ElementalBreaker
             bool popAcquired = shownAcquired >= 0 && acquired > shownAcquired;
             shownBalls = balls;
             shownAcquired = acquired;
-            if (ballLabel != null)
-                ballLabel.SetText("x{0}", balls);
-            if (acquiredBadge == null)
-                return;
+            ballLabel.SetText("공 ×{0}", balls);
             // 이번 턴에 얻은 공은 다음 턴에 합류하니까 "+N"으로 따로 보여 줘.
-            acquiredBadge.gameObject.SetActive(acquired > 0);
-            if (acquired <= 0)
-                return;
-            acquiredLabel.SetText("+{0}", acquired);
-            float x = ballLabel.rectTransform.anchoredPosition.x + ballLabel.preferredWidth + AcquiredGap;
+            bool hasAcquired = acquired > 0;
+            acquiredBadge.gameObject.SetActive(hasAcquired);
+            if (hasAcquired)
+                acquiredLabel.SetText("+{0}", acquired);
+            float labelWidth = ballLabel.preferredWidth;
+            float total = ballIcon.sizeDelta.x + SmallGap + labelWidth + (hasAcquired ? SmallGap + acquiredBadge.sizeDelta.x : 0f);
+            float x = -total * 0.5f;
+            ballIcon.anchoredPosition = new Vector2(x, ballIcon.anchoredPosition.y);
+            x += ballIcon.sizeDelta.x + SmallGap;
+            ballLabel.rectTransform.anchoredPosition = new Vector2(x, ballLabel.rectTransform.anchoredPosition.y);
+            x += labelWidth + SmallGap;
             acquiredBadge.anchoredPosition = new Vector2(x, acquiredBadge.anchoredPosition.y);
             if (popAcquired)
                 Pop(acquiredBadge);
+        }
+
+        // [아이콘 글자] 두 항목을 gap을 두고 이어 붙이고, 묶음 전체를 가운데에 둬. 항목은 왼쪽 가운데 기준이야.
+        private static void LayoutRow(RectTransform group, RectTransform icon, float gap, RectTransform label, float labelWidth)
+        {
+            if (group == null || icon == null || label == null)
+                return;
+            float x = -(icon.sizeDelta.x + gap + labelWidth) * 0.5f;
+            icon.anchoredPosition = new Vector2(x, icon.anchoredPosition.y);
+            label.anchoredPosition = new Vector2(x + icon.sizeDelta.x + gap, label.anchoredPosition.y);
         }
 
         private static void Pop(RectTransform target)

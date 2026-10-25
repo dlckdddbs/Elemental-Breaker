@@ -14,6 +14,7 @@ namespace ElementalBreaker
         // 아이템이 칸에 들어올 때 톡 튀는 크기와 시간이야.
         private const float ArrivePopScale = 0.18f;
         private const float ArrivePopTime = 0.28f;
+        private static readonly Color32 ReadyLabelColor = new Color32(0xFF, 0xE4, 0x8A, 0xFF);
 
         [SerializeField] private BrickBoard board;
         [SerializeField] private BallLauncher launcher;
@@ -101,7 +102,8 @@ namespace ElementalBreaker
         private void Refresh(ItemType item, ElementType element, bool usable)
         {
             bool has = item != ItemType.None;
-            emptyFrame.enabled = !has;
+            // 빈 칸 표시(점선과 "+")는 묶음째 켜고 꺼.
+            emptyFrame.gameObject.SetActive(!has);
             itemBody.enabled = has;
             if (itemOverlay != null)
                 itemOverlay.enabled = false;
@@ -118,7 +120,11 @@ namespace ElementalBreaker
             }
             button.interactable = usable;
             if (label != null)
+            {
                 label.SetText(usable ? "눌러서 사용" : "아이템");
+                // 쓸 수 있을 때는 빛나는 테두리와 같은 금색으로 눈에 띄게 해.
+                label.color = usable ? (Color)ReadyLabelColor : Color.white;
+            }
         }
     }
 }

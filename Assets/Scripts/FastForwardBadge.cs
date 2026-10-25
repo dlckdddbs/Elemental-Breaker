@@ -7,7 +7,8 @@ namespace ElementalBreaker
     // 배속 중에만 상단 정보 아래에 표시해. 터치는 받지 않아.
     public sealed class FastForwardBadge : MonoBehaviour
     {
-        private const float BadgeTop = -112f;
+        // 상단 정보판(높이 121) 바로 아래, 게임판 위쪽 빈 띠에 떠.
+        private const float BadgeTop = -127f;
         // 얼음 상태 표시가 맨 위 빈 칸 가운데에 떠 있으면 ×2를 이만큼 오른쪽으로 비켜.
         private const float AsideOffset = 124f;
 
