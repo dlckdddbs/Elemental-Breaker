@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 69b8d7bc1538482f87c3ba8e877e3922, type: 3}
   m_Name: GameAudioCatalog
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   sounds:
   - clip: {fileID: 0}
     volume: 0
@@ -53,9 +53,19 @@ MonoBehaviour:
     volume: 0.45
   - clip: {fileID: 8300000, guid: 7f6bcb3416d7faf41b3a6c8811fb797c, type: 3}
     volume: 0.55
+  - clip: {fileID: 8300000, guid: 30b001ca6124d3845b902be8bc614239, type: 3}
+    volume: 0.5
+  - clip: {fileID: 8300000, guid: 0cba369ada5bf0f409a5570865e1c679, type: 3}
+    volume: 0.5
   - clip: {fileID: 0}
     volume: 0.6
-  - clip: {fileID: 0}
-    volume: 0.6
-  - clip: {fileID: 0}
-    volume: 0.6
+  - clip: {fileID: 8300000, guid: 073de661cd0411748887d83b8c108b58, type: 3}
+    volume: 0.5
+  - clip: {fileID: 8300000, guid: cefcdd100a52c1d4f9608b6168f9e915, type: 3}
+    volume: 0.55
+  - clip: {fileID: 8300000, guid: 5883ad74849259145af472d313686a9d, type: 3}
+    volume: 0.45
+  - clip: {fileID: 8300000, guid: 728cc25789cba0945be1a581405e3b56, type: 3}
+    volume: 0.45
+  - clip: {fileID: 8300000, guid: 60fbac78c1a37dd45a3ed8b0fa128b8f, type: 3}
+    volume: 0.7

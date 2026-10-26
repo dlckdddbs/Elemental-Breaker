@@ -22,13 +22,13 @@ namespace ElementalBreaker.Editor
         private static readonly Vector4 ChipBorder = new Vector4(30f, 0f, 30f, 0f);
         // 보드 서리 테두리는 모서리 100px을 고정하고 가장자리 무늬(56px)를 이어 붙여(Tiled).
         private static readonly Vector4 FrostFrameBorder = new Vector4(100f, 100f, 100f, 100f);
-        // 턴 보상 배너 바탕(1306x408)이야. 둥근 모서리(반지름 약 103px)와 금색 테두리는 고정하고 가운데만 늘려서 배너 비율이 달라도 모서리가 안 찌그러져.
-        private static readonly Vector4 RewardBannerBorder = new Vector4(112f, 112f, 112f, 112f);
+        // 턴 보상 배너 바탕(871x272, 기준 화면의 2배)이야. 둥근 모서리(반지름 약 69px)와 테두리는 고정하고 가운데만 늘려서 배너 비율이 달라도 모서리가 안 찌그러져.
+        private static readonly Vector4 RewardBannerBorder = new Vector4(75f, 75f, 75f, 75f);
         // 오라 이미지(288x160)에서 공 중심이 있는 위치야. 공과 같은 점을 기준으로 회전해.
         private static readonly Vector2 AuraPivot = new Vector2(208f / 288f, 0.5f);
 
         // 규칙을 바꾸면 이 숫자를 올려. 이미 들어온 이미지도 새 규칙으로 다시 가져와.
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 6;
 
         private void OnPreprocessTexture()
         {

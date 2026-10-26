@@ -1,0 +1,2 @@
+file,how,duration,sample rate,license,notes
+SFX/Generated/game_over_thud.wav,Synthesized in code for this project (falling 170->55 Hz tone + short low-passed noise knock),0.32,44100,Own work (no third-party source),Game over thud when bricks reach the bottom line

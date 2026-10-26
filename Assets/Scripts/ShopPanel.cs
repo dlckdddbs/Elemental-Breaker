@@ -42,12 +42,13 @@ namespace ElementalBreaker
         [SerializeField] private BrickBoard board;
         [SerializeField] private BallLauncher launcher;
         [SerializeField] private ElementSelectButton elementSelect;
-        [Header("가격 (테스트용 1골드)")]
-        [SerializeField, Min(0)] private int bombPrice = 1;
-        [SerializeField, Min(0)] private int icePrice = 1;
-        [SerializeField, Min(0)] private int brickChangePrice = 1;
-        [Tooltip("같은 판에서 같은 아이템을 살 때마다 오르는 가격. 0이면 안 올라.")]
-        [SerializeField, Min(0)] private int priceStep = 0;
+        [Header("가격 (10턴마다 오르는 값은 1~9턴 0번, 10~19턴 1번, 20~29턴 2번 더해)")]
+        [SerializeField, Min(0)] private int bombBasePrice = 60;
+        [SerializeField, Min(0)] private int bombPricePerTenTurns = 10;
+        [Tooltip("얼음은 이번 판에 쓸 때마다 가격이 2배가 돼(100 → 200 → 400).")]
+        [SerializeField, Min(0)] private int iceBasePrice = 100;
+        [SerializeField, Min(0)] private int brickChangeBasePrice = 50;
+        [SerializeField, Min(0)] private int brickChangePricePerTenTurns = 10;
         [Header("상점 버튼")]
         [Tooltip("버튼과 라벨을 묶은 칸이야. 발사 중에는 칸째 흐리게 해.")]
         [SerializeField] private CanvasGroup shopGroup;
@@ -62,7 +63,6 @@ namespace ElementalBreaker
         [SerializeField] private Card iceCard;
         [SerializeField] private Card brickChangeCard;
 
-        private int bombBought, iceBought, brickChangeBought;
         private int brickChangeUsedTurn = -1;
         private bool dirty = true;
         private int shownCanPrepare = -1;
@@ -80,9 +80,9 @@ namespace ElementalBreaker
 
         public bool IsOpen => list != null && list.activeSelf;
 
-        private int BombPrice => bombPrice + bombBought * priceStep;
-        private int IcePrice => icePrice + iceBought * priceStep;
-        private int BrickChangePrice => brickChangePrice + brickChangeBought * priceStep;
+        private int BombPrice => bombBasePrice + bombPricePerTenTurns * board.PriceTier;
+        private int IcePrice => (int)Math.Min(int.MaxValue, (long)iceBasePrice << Math.Min(board.IceUseCount, 30));
+        private int BrickChangePrice => brickChangeBasePrice + brickChangePricePerTenTurns * board.PriceTier;
 
         // 지금 가격이야. 해금으로 받을 아이템을 칸이 차서 못 받으면 이만큼 골드로 대신 줘.
         public int PriceOf(ShopItem item) =>
@@ -178,11 +178,11 @@ namespace ElementalBreaker
             dirty = true;
         }
 
-        private void BuyBomb() => BuyStored(ShopItem.Bomb, ItemType.Bomb, BombPrice, ref bombBought);
+        private void BuyBomb() => BuyStored(ShopItem.Bomb, ItemType.Bomb, BombPrice);
 
-        private void BuyIce() => BuyStored(ShopItem.Ice, ItemType.Ice, IcePrice, ref iceBought);
+        private void BuyIce() => BuyStored(ShopItem.Ice, ItemType.Ice, IcePrice);
 
-        private void BuyStored(ShopItem shopItem, ItemType item, int price, ref int bought)
+        private void BuyStored(ShopItem shopItem, ItemType item, int price)
         {
             if (!CanShop() || !IsUnlocked(shopItem) || !board.Items.IsEmpty || !board.Gold.TrySpend(price))
             {
@@ -191,7 +191,6 @@ namespace ElementalBreaker
             }
             board.Items.TryGive(item);
             GameAudio.Play(SoundCue.Purchase);
-            bought++;
             dirty = true;
         }
 
@@ -206,7 +205,6 @@ namespace ElementalBreaker
             }
             board.ChangeAllBrickElements(ElementRules.WeakTo(element));
             brickChangeUsedTurn = board.TurnNumber;
-            brickChangeBought++;
             // 바로 적용 아이템은 상점을 닫아서 벽돌이 바뀌는 모습이 가려지지 않게 해.
             CloseSilently();
         }

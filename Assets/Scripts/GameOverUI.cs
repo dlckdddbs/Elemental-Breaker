@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace ElementalBreaker
 {
-    // 게임 오버 화면을 띄우고 현재 게임 씬을 다시 시작해.
+    // 게임 오버 화면을 띄우고 현재 게임 씬을 다시 시작해. 경계선이 무너지는 연출이 끝난 뒤에 떠.
     // 게임 화면을 어둡게 덮고 가운데 카드에 [게임 오버 / 도달한 턴 / 공 개수와 골드 / 다시 하기]를 보여 줘.
     public sealed class GameOverUI : MonoBehaviour
     {
@@ -35,6 +35,8 @@ namespace ElementalBreaker
 
         private bool restarting;
         private bool configured;
+        // 경계선이 무너지는 동안 창을 띄우려고 기다리는 중이야.
+        private bool waiting;
 
         private void Awake()
         {
@@ -65,10 +67,21 @@ namespace ElementalBreaker
                 ShowGameOver();
         }
 
+        // 벽돌이 기준선에 닿으면 위아래 경계선이 무너지는 동안(BoundaryCollapse.Duration) 기다렸다가 창을 띄워.
         private void ShowGameOver()
         {
+            if (restarting || waiting)
+                return;
+            waiting = true;
+            DOVirtual.DelayedCall(BoundaryCollapse.Duration, OpenPanel, true).SetTarget(this);
+        }
+
+        private void OpenPanel()
+        {
+            waiting = false;
             if (restarting)
                 return;
+            GameAudio.Play(SoundCue.GameOver);
             if (resultLabel != null)
                 resultLabel.SetText("게임 오버\n도달 턴: {0}", board.TurnNumber);
             if (turnLabel != null)
@@ -151,6 +164,8 @@ namespace ElementalBreaker
 
         private void OnDisable()
         {
+            DOTween.Kill(this);
+            waiting = false;
             if (dim != null)
                 dim.DOKill();
             if (card != null)

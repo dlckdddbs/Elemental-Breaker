@@ -12,16 +12,16 @@ namespace ElementalBreaker
         [SerializeField] private Camera aimCamera;
         [SerializeField] private Ball ball;
         [SerializeField] private Transform launchPoint;
-        [Tooltip("플레이 시작 시 생성할 공 개수. 변경 후 플레이를 다시 시작해 주세요.")]
-        [SerializeField, Min(1)] private int testBallCount = 5;
+        [Tooltip("게임을 시작할 때 가진 공 개수야. 바꾼 뒤 플레이를 다시 시작해.")]
+        [SerializeField, Min(1)] private int startingBallCount = 1;
         [Tooltip("공 발사 간격(초). 물리 프레임 단위로 적용됩니다.")]
         [SerializeField, Min(0.01f)] private float launchInterval = 0.1f;
         [SerializeField] private LineRenderer aimLine;
+        [Tooltip("손가락이 공에서 이 거리(화면 픽셀)보다 가까우면 각도가 크게 튀어서 조준하지 않아.")]
         [SerializeField, Min(1f)] private float minimumDragPixels = 20f;
         [SerializeField, Range(1f, 80f)] private float minimumLaunchAngle = 10f;
         [SerializeField, Min(0.01f)] private float aimLineWidth = 0.04f;
         [SerializeField] private Color aimLineColor = new Color(0.4f, 0.9f, 1f, 1f);
-        [SerializeField, Min(0.1f)] private float aimStartHeight = 2f;
         [Header("트레일")]
         [Tooltip("동시에 쓰는 트레일 최대 개수. 공이 이보다 많으면 간격을 두고 나눠 붙여.")]
         [SerializeField, Min(0)] private int maxTrails = 10;
@@ -34,7 +34,6 @@ namespace ElementalBreaker
 
         private InputAction pointerPosition;
         private InputAction pointerPress;
-        private Vector2 dragStart;
         private bool dragging;
         private const float FastForwardHoldSeconds = 0.25f;
         private Pointer fastForwardPointer;
@@ -156,7 +155,10 @@ namespace ElementalBreaker
         public void AddBall()
         {
             // 현재 턴 발사 목록은 유지하고, 턴이 끝나는 순간 합류시켜.
+            // 턴 밖(바닥까지 내려온 공 아이템을 자동으로 받을 때)이면 바로 합류해.
             acquiredBallCount++;
+            if (!IsTurnActive)
+                MergeAcquiredBalls();
         }
 
         public void SetInputBlocked(bool blocked)
@@ -253,7 +255,7 @@ namespace ElementalBreaker
                 Debug.LogWarning("Ball 레이어가 없어서 공끼리 충돌을 발사할 때마다 하나씩 꺼. Tags and Layers에 Ball 레이어를 추가해.", this);
             // 최초 한 번만 생성하고 이후 턴에는 같은 공들을 재사용해.
             bool hasSceneBall = ball.gameObject.scene.IsValid();
-            for (int i = 0; i < Mathf.Max(1, testBallCount); i++)
+            for (int i = 0; i < Mathf.Max(1, startingBallCount); i++)
             {
                 // 프리팹 원본에는 접근하지 않고 생성된 공만 준비해.
                 Ball pooledBall = i == 0 && hasSceneBall ? ball : CreateBall();
@@ -463,16 +465,10 @@ namespace ElementalBreaker
             }
 
             Vector2 screenPosition = pointerPosition.ReadValue<Vector2>();
-            if (pointerPress.WasPressedThisFrame() && !IsPointerOverUI(screenPosition) && TryWorldPoint(screenPosition, out Vector2 start))
-            {
-                // 벽돌 쪽에서 시작한 드래그는 무시해.
-                if (start.y <= launchPoint.position.y + aimStartHeight &&
-                    aimCamera.pixelRect.Contains(screenPosition))
-                {
-                    dragStart = screenPosition;
-                    dragging = true;
-                }
-            }
+            // 게임판 아무 데나 누르면 조준을 시작해. 버튼 위를 누른 건 조준으로 치지 않아.
+            if (pointerPress.WasPressedThisFrame() && !IsPointerOverUI(screenPosition) &&
+                aimCamera.pixelRect.Contains(screenPosition))
+                dragging = true;
 
             if (!dragging)
                 return;
@@ -494,20 +490,23 @@ namespace ElementalBreaker
             }
         }
 
+        // 스와이프 벽돌깨기처럼 공에서 손가락이 있는 곳을 향해 조준해. 손가락을 움직이면 조준선이 따라오고, 떼면 발사해.
+        // 손가락을 발사선 아래로 내리면 조준선이 사라지고, 거기서 떼면 쏘지 않고 취소돼.
         private bool TryAimDirection(Vector2 screenPosition, out Vector2 direction)
         {
             direction = Vector2.zero;
-            if ((dragStart - screenPosition).sqrMagnitude < minimumDragPixels * minimumDragPixels ||
-                !TryWorldPoint(dragStart, out Vector2 start) ||
-                !TryWorldPoint(screenPosition, out Vector2 end))
+            Vector2 origin = launchPoint.position;
+            Vector2 originScreen = aimCamera.WorldToScreenPoint(origin);
+            if ((screenPosition - originScreen).sqrMagnitude < minimumDragPixels * minimumDragPixels ||
+                !TryWorldPoint(screenPosition, out Vector2 target))
                 return false;
 
-            Vector2 drag = start - end;
-            if (drag.y <= 0f || drag.sqrMagnitude < 0.0001f)
+            Vector2 aim = target - origin;
+            if (aim.y <= 0f || aim.sqrMagnitude < 0.0001f)
                 return false;
 
             // 너무 낮은 각도는 올려서 공이 옆으로만 날아가지 않게 해.
-            float angle = Mathf.Atan2(drag.y, drag.x) * Mathf.Rad2Deg;
+            float angle = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
             angle = Mathf.Clamp(angle, minimumLaunchAngle, 180f - minimumLaunchAngle) * Mathf.Deg2Rad;
             direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
             return true;

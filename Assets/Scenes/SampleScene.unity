@@ -5845,14 +5845,13 @@ MonoBehaviour:
   aimCamera: {fileID: 519420031}
   ball: {fileID: 2033542690642636208, guid: 0c21ca1b93fa8f14883db0d986e02b1e, type: 3}
   launchPoint: {fileID: 1427913929}
-  testBallCount: 5
+  startingBallCount: 1
   launchInterval: 0.1
   aimLine: {fileID: 0}
   minimumDragPixels: 20
   minimumLaunchAngle: 10
   aimLineWidth: 0.04
   aimLineColor: {r: 0.4, g: 0.9, b: 1, a: 1}
-  aimStartHeight: 2
   maxTrails: 10
   trailTime: 0.15
   trailWidth: 0.24
@@ -6667,7 +6666,8 @@ MonoBehaviour:
   board: {fileID: 2000000002}
   launcher: {fileID: 590722046}
   shop: {fileID: 642163456}
-  price: 1
+  basePrice: 30
+  basePricePerTenTurns: 5
   buttonGroup: {fileID: 1696592273}
   button: {fileID: 1026002023}
   face: {fileID: 837303808}
@@ -6700,10 +6700,11 @@ MonoBehaviour:
   board: {fileID: 2000000002}
   launcher: {fileID: 590722046}
   elementSelect: {fileID: 642163455}
-  bombPrice: 1
-  icePrice: 1
-  brickChangePrice: 1
-  priceStep: 0
+  bombBasePrice: 60
+  bombPricePerTenTurns: 10
+  iceBasePrice: 100
+  brickChangeBasePrice: 50
+  brickChangePricePerTenTurns: 10
   shopGroup: {fileID: 377242787}
   shopButton: {fileID: 216295940}
   shopLabel: {fileID: 840386105}
@@ -18369,8 +18370,6 @@ MonoBehaviour:
   launcher: {fileID: 590722046}
   brickTemplate: {fileID: 8383716786240811064, guid: fc503b0ad31d52244a219c0c04e755e8, type: 3}
   pickupTemplate: {fileID: 5145576721704528589, guid: e8d7e1df94fdf9d4c9a0f5954f49d5d4, type: 3}
-  pickupProbability: 1
-  maxPickupsPerRow: 2
   pickupSizeRatio: 0.55
   boardCenter: {x: 0, y: -0.18}
   boardSize: {x: 5.62, y: 6.21}
@@ -18379,9 +18378,13 @@ MonoBehaviour:
   dangerRow: 8
   brickGap: {x: 0.035, y: 0.035}
   maxBricksPerRow: 6
-  spawnProbability: 0.7
+  minBricksPerRow: 2
+  earlySpawnProbability: 0.55
+  lateSpawnProbability: 0.7
+  lateSpawnTurn: 20
   baseHealth: 3
   healthPerTurn: 1
+  startingGold: 300
   descentDuration: 0.25
   bombRadius: 1
   bombDamageDivisor: 2
@@ -18394,7 +18397,7 @@ MonoBehaviour:
     goldPerTurn: 10
     debuffStartTurn: 4
     debuffInterval: 10
-    startTurn: 2
+    startTurn: 1
 --- !u!1 &2008328679
 GameObject:
   m_ObjectHideFlags: 0

@@ -71,14 +71,15 @@ namespace ElementalBreaker.Editor
 
         private static void Verify(BrickBoard board, BallLauncher launcher)
         {
-            Set(board, "spawnProbability", 1f);
+            Set(board, "earlySpawnProbability", 1f);
+            Set(board, "lateSpawnProbability", 1f);
             for (int column = 0; column < 7; column++)
             {
                 Brick existing = board.GetBrick(0, column);
                 if (existing != null)
                     existing.TakeDamage(int.MaxValue);
             }
-            Call(board, "SpawnTopRow");
+            Call(board, "SpawnTopRow", true);
             var balls = (List<Ball>)launcher.GetType().GetField("balls", Private).GetValue(launcher);
             Check(balls.Count > 1, "검증용 공이 두 개 이상 필요해.");
             int occupied = 0;

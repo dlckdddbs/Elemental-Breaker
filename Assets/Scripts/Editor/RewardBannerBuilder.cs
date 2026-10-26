@@ -16,7 +16,7 @@ namespace ElementalBreaker.Editor
         private const string FontPath = "Assets/Font/Jua/Jua-Regular UI SDF.asset";
         private const string OutlinePath = "Assets/Font/Jua/Jua-Regular UI SDF Outline.mat";
         public static readonly string[] CreatedNames = { "TurnBanner" };
-        // 배너 크기(기준 해상도 480x854)와 상단 띠에서 떨어진 거리야. 바탕 그림은 높이 408px(3배)이고 가운데만 늘어나서 가로 비율은 달라도 돼.
+        // 배너 크기(기준 해상도 480x854)와 상단 띠에서 떨어진 거리야. 바탕 그림은 높이 272px(2배)이고 가운데만 늘어나서 가로 비율은 달라도 돼.
         private static readonly Vector2 BannerSize = new Vector2(400f, 136f);
         private const float BannerGap = 14f;
         private const float EdgeWidth = 4f;
@@ -142,7 +142,7 @@ namespace ElementalBreaker.Editor
                 fill.color = FillTint;
                 Stretch(fill.rectTransform, EdgeWidth);
             }
-            TMP_Text title = Label("Title", banner, outline, "3턴 도달!", 36f, Color.white, TextAlignmentOptions.Midline);
+            TMP_Text title = Label("Title", banner, outline, "3턴 달성!", 36f, Color.white, TextAlignmentOptions.Midline);
             Place(title.rectTransform, Top, Center, new Vector2(0f, -38f), new Vector2(360f, 44f));
             Gold(title);
 

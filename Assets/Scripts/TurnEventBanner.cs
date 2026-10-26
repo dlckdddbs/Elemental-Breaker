@@ -7,11 +7,11 @@ using UnityEngine.UI;
 namespace ElementalBreaker
 {
     // 턴 이벤트(해금, 골드, 디버프)를 보여 주는 배너야. TurnEvents가 이벤트마다 불러.
-    // 상단 정보판 바로 아래에 "N턴 도달!" 배너가 톡 커지며 나타나고, 잠깐 머문 뒤 받은 것이 제자리로 날아가.
+    // 상단 정보판 바로 아래에 "N턴 달성!" 배너가 톡 커지며 나타나고, 잠깐 머문 뒤 받은 것이 제자리로 날아가.
     // - 해금(보관형): 아이콘이 아이템 칸으로 날아가서 도착하는 순간 칸에 들어가. 칸이 차 있었으면 동전이 골드로 날아가.
     // - 해금(벽돌 속성 변경): 배너가 사라지면 속성 물결이 퍼지고, 물결이 끝나면 넘어가.
     // - 골드 보상: 해금보다 작은 배너로 보여 주고, 동전이 골드로 날아가.
-    // - 디버프: 붉은 경고 배너("N턴 경고!")가 흔들리며 나타나고 화면 가장자리가 붉게 번쩍여.
+    // - 디버프: 붉은 경고 배너("N턴 주의!")가 흔들리며 나타나고 화면 가장자리가 붉게 번쩍여.
     //   배너가 사라지면 그 턴 내내 상단 왼쪽에 빨간 표시가 남아. 두 칸 하강 턴에 얼음을 쓰면 표시가 회색으로 흐려져.
     // 빛줄기는 큰 보상 배너가 나타나는 순간에만 아주 흐리게 잠깐 보여. 연출은 모두 실제 시간으로 움직여.
     public sealed class TurnEventBanner : MonoBehaviour
@@ -182,7 +182,11 @@ namespace ElementalBreaker
         {
             Sprite panelSprite = warning ? warningPanel : rewardPanel;
             if (panel != null && panelSprite != null)
+            {
                 panel.sprite = panelSprite;
+                // 그림 해상도가 바뀌어도 그림 높이가 배너 높이에 딱 맞게 배율을 다시 맞춰. 모서리 크기가 그대로야.
+                panel.pixelsPerUnitMultiplier = panelSprite.rect.height / (panelSprite.pixelsPerUnit / 100f) / banner.rect.height;
+            }
             if (alert != null)
                 alert.SetActive(warning);
             Color32 top = warning ? RedTop : GoldTop, bottom = warning ? RedBottom : GoldBottom;
@@ -198,18 +202,18 @@ namespace ElementalBreaker
             switch (turnEvent.Kind)
             {
                 case TurnEventKind.Gold:
-                    title.SetText("{0}턴 도달!", turnEvent.Turn);
+                    title.SetText("{0}턴 달성!", turnEvent.Turn);
                     icon.sprite = coinIcon;
                     line.SetText("+{0} 골드", turnEvent.Gold);
                     break;
                 case TurnEventKind.Debuff:
-                    title.SetText("{0}턴 경고!", turnEvent.Turn);
+                    title.SetText("{0}턴 주의!", turnEvent.Turn);
                     icon.sprite = debuffIcons[(int)turnEvent.Debuff - 1];
                     line.SetText(DebuffLine(turnEvent.Debuff));
                     subText = DebuffSub(turnEvent.Debuff);
                     break;
                 default:
-                    title.SetText("{0}턴 도달!", turnEvent.Turn);
+                    title.SetText("{0}턴 달성!", turnEvent.Turn);
                     line.SetText(ItemName(turnEvent.Item) + " 해금!");
                     switch (turnEvent.Item)
                     {
@@ -289,6 +293,7 @@ namespace ElementalBreaker
             banner.localScale = Vector3.one * (bannerScale * EnterScale);
             icon.enabled = true;
 
+            GameAudio.Play(warning ? SoundCue.Warning : SoundCue.RewardBanner);
             Sequence enter = NewSequence();
             enter.Insert(0f, scrim.DOFade(small ? SmallScrimAlpha : ScrimAlpha, ScrimTime));
             enter.Insert(0f, bannerGroup.DOFade(1f, FadeInTime));
@@ -452,6 +457,7 @@ namespace ElementalBreaker
                 flyer.gameObject.SetActive(false);
                 UpdateFlight(1f);
                 applyEvent?.Invoke();
+                GameAudio.Play(SoundCue.ItemArrive);
                 PlayBurst(flyTo);
             });
             exit.Insert(FlyTime, scrim.DOFade(0f, ScrimTime));
@@ -499,6 +505,7 @@ namespace ElementalBreaker
             exit.InsertCallback(CoinTime, () =>
             {
                 applyEvent?.Invoke();
+                GameAudio.Play(SoundCue.CoinArrive);
                 PlayBurst(flyTo);
                 ShowGain(amount);
             });

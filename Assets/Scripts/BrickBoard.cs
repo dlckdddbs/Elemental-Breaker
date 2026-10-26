@@ -11,9 +11,8 @@ namespace ElementalBreaker
         [SerializeField] private BallLauncher launcher;
         [Tooltip("같은 오브젝트에 Brick, SpriteRenderer, BoxCollider2D가 있는 프리팹 또는 씬 견본")]
         [SerializeField] private Brick brickTemplate;
+        [Tooltip("공 +1 아이템이야. 새 줄마다 무작위 한 칸에 꼭 하나 나와.")]
         [SerializeField] private BoardPickup pickupTemplate;
-        [SerializeField, Range(0f, 1f)] private float pickupProbability = 0.3f;
-        [SerializeField, Min(0)] private int maxPickupsPerRow = 2;
         [SerializeField, Range(0.1f, 0.9f)] private float pickupSizeRatio = 0.55f;
         [Tooltip("월드 좌표의 보드 중심")]
         [SerializeField] private Vector2 boardCenter = new Vector2(0f, 0.7f);
@@ -23,10 +22,20 @@ namespace ElementalBreaker
         [Tooltip("0부터 세는 위험 행. 기본 9는 열 번째 행이야.")]
         [SerializeField, Min(1)] private int dangerRow = 9;
         [SerializeField] private Vector2 brickGap = new Vector2(0.08f, 0.08f);
+        [Header("새 줄 벽돌")]
+        [Tooltip("한 줄 최대 벽돌 수야. 공 +1 아이템 자리 한 칸은 늘 비워 둬서 실제로는 칸 수 - 1까지만 나와.")]
         [SerializeField, Range(0, 6)] private int maxBricksPerRow = 6;
-        [SerializeField, Range(0f, 1f)] private float spawnProbability = 0.7f;
-        [SerializeField, Min(1)] private int baseHealth = 3;
-        [SerializeField, Min(0)] private int healthPerTurn = 1;
+        [Tooltip("한 줄에 적어도 이만큼은 벽돌이 나와.")]
+        [SerializeField, Min(0)] private int minBricksPerRow = 2;
+        [Tooltip("칸마다 벽돌이 나올 확률이야. lateSpawnTurn 턴까지는 early, 그 뒤로는 late 확률을 써.")]
+        [SerializeField, Range(0f, 1f)] private float earlySpawnProbability = 0.55f;
+        [SerializeField, Range(0f, 1f)] private float lateSpawnProbability = 0.7f;
+        [SerializeField, Min(1)] private int lateSpawnTurn = 20;
+        [Tooltip("새 줄 벽돌 체력 = 턴 × 이 값이야. 1이면 1턴 1, 10턴 10.")]
+        [SerializeField, Min(1)] private int healthPerTurn = 1;
+        [Header("시작")]
+        [Tooltip("게임을 시작할 때 가진 골드야.")]
+        [SerializeField, Min(0)] private int startingGold = 300;
         [SerializeField, Min(0f)] private float descentDuration = 0.25f;
         [Header("아이템: 속성 폭탄")]
         [Tooltip("맨 앞 공 칸에서 몇 칸까지 맞는지야. 1이면 3x3.")]
@@ -75,6 +84,8 @@ namespace ElementalBreaker
         public ElementWave ElementWave { get; private set; }
         // 이번 턴에 얼음을 썼어. 턴이 끝나면 벽돌이 내려오지 않고 새 줄도 생기지 않아. 턴 수는 그대로 1 올라가.
         public bool IsFrozen { get; private set; }
+        // 이번 판에 얼음을 쓴 횟수야. 상점의 얼음 가격이 쓸 때마다 2배가 돼.
+        public int IceUseCount { get; private set; }
         public GoldWallet Gold { get; } = new GoldWallet();
         // 아이템 칸이야. 상점에서 사면 여기에 들어오고, 공이 날아가는 동안 꺼내 써.
         public ItemSlot Items { get; } = new ItemSlot();
@@ -82,12 +93,20 @@ namespace ElementalBreaker
 
         private BombItem bomb;
         private TurnEvents turnEvents;
+        private BoundaryCollapse collapse;
 
-        private const int BreakGold = 1;
-        private const int AdvantageBreakGold = 2;
+        // 벽돌 하나를 깨면 받는 골드가 이 턴마다 1씩 올라. 1~19턴 1골드, 20~29턴 2골드, 30~39턴 3골드야.
+        private const int BreakGoldTurnStep = 10;
 
-        // 벽돌 하나를 깨면 1골드, 유리한 상성으로 깨면 2골드야.
-        public void AwardBreak(bool advantage) => Gold.Add(advantage ? AdvantageBreakGold : BreakGold);
+        // 벽돌 하나를 깨면 (턴 ÷ 10, 최소 1)골드, 유리한 상성으로 깨면 그 2배야.
+        public void AwardBreak(bool advantage)
+        {
+            int gold = Mathf.Max(1, TurnNumber / BreakGoldTurnStep);
+            Gold.Add(advantage ? gold * 2 : gold);
+        }
+
+        // 상점 가격처럼 10턴마다 오르는 값이 지금 몇 번 올랐는지야. 1~9턴 0, 10~19턴 1, 20~29턴 2야.
+        public int PriceTier => TurnNumber / 10;
 
         private void Awake()
         {
@@ -144,6 +163,14 @@ namespace ElementalBreaker
             BombTargetMarker bombTarget = new GameObject("Bomb Target").AddComponent<BombTargetMarker>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(bombTarget.gameObject, gameObject.scene);
             bombTarget.Initialize(this, launcher, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder + 4);
+            // 게임 오버 때 위쪽 경계선과 회수선이 무너지는 연출이야. 선은 BoardPresentation이 그리고 있어서 그걸 조각내.
+            BoardPresentation presentation = FindFirstObjectByType<BoardPresentation>();
+            if (presentation != null)
+            {
+                collapse = new GameObject("Boundary Collapse").AddComponent<BoundaryCollapse>();
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(collapse.gameObject, gameObject.scene);
+                collapse.Initialize(presentation);
+            }
             ElementWave = new GameObject("Element Wave").AddComponent<ElementWave>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(ElementWave.gameObject, gameObject.scene);
             ElementWave.Initialize(this, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
@@ -167,6 +194,7 @@ namespace ElementalBreaker
                 }
             }
             TurnNumber = TurnEvents.StartTurn;
+            Gold.Add(startingGold);
             TurnEvents.SkipTo(TurnNumber);
             initialized = true;
             lastProcessedTurn = launcher.CompletedTurnCount;
@@ -281,6 +309,7 @@ namespace ElementalBreaker
                     break;
                 case ItemType.Ice:
                     IsFrozen = true;
+                    IceUseCount++;
                     Ice.PlayFreeze(launcher.LaunchPosition);
                     used = true;
                     break;
@@ -377,7 +406,7 @@ namespace ElementalBreaker
         {
             TurnEvents.Prepare(TurnNumber);
             if (spawnRow)
-                SpawnTopRow();
+                SpawnTopRow(true);
             TurnEvents.Play(OpenTurn);
         }
 
@@ -411,26 +440,39 @@ namespace ElementalBreaker
                 return;
 
             IsProcessing = false;
-            // 놓친 아이템은 위험 행에서 보상 없이 치워.
+            // 바닥(위험 행)까지 내려온 공 아이템은 못 맞혔어도 공 +1을 받아. 다음 턴 속성 예약은 바꾸지 않아.
+            bool collected = false;
             for (int row = dangerRow; row < rows; row++)
             for (int column = 0; column < columns; column++)
-                if (pickups[row, column] != null)
-                    ReturnPickup(pickups[row, column]);
+            {
+                if (pickups[row, column] == null)
+                    continue;
+                ReturnPickup(pickups[row, column]);
+                launcher.AddBall();
+                collected = true;
+            }
+            if (collected)
+                GameAudio.Play(SoundCue.Pickup);
             for (int row = dangerRow; row < rows; row++)
             for (int column = 0; column < columns; column++)
             {
                 if (cells[row, column] == null)
                     continue;
+                // 벽돌이 기준선에 닿는 순간 둔탁한 "쿵"과 함께 위아래 경계선이 무너지고,
+                // 다 무너진 뒤(BoundaryCollapse.Duration) GameOverUI가 다시 하기 창을 띄워.
                 IsGameOver = true;
-                GameAudio.Play(SoundCue.GameOver);
+                GameAudio.Play(SoundCue.GameOverThud);
+                if (collapse != null)
+                    collapse.Play();
                 Debug.Log("게임 오버: 벽돌이 위험 행에 도달했어.", this);
                 GameOver?.Invoke();
                 return;
             }
             if (extraDescents > 0)
             {
+                // 두 칸 하강 턴에 한 칸 내려온 뒤 생기는 줄이야. 공 +1 아이템은 한 턴에 하나라 이 줄에는 안 놓아.
                 extraDescents--;
-                SpawnTopRow();
+                SpawnTopRow(false);
                 IsProcessing = true;
                 descentPause = DoubleDescentPause;
                 return;
@@ -440,34 +482,38 @@ namespace ElementalBreaker
             StartTurn(true);
         }
 
-        private void SpawnTopRow()
+        // 맨 위에 새 줄을 만들어. withPickup이면 무작위 한 칸을 공 +1 아이템 자리로 먼저 비워 두고,
+        // 나머지 칸마다 확률(20턴까지 55%, 그 뒤 70%)로 벽돌을 놓아. 그래도 적으면 빈 칸을 채워 최소 개수를 맞춰.
+        private void SpawnTopRow(bool withPickup)
         {
+            // 열 순서를 섞어서 왼쪽에만 몰리지 않게 해. 맨 앞 칸이 공 아이템 자리야.
             for (int i = 0; i < columns; i++)
                 columnOrder[i] = i;
+            for (int i = 0; i < columns; i++)
+            {
+                int randomIndex = UnityEngine.Random.Range(i, columns);
+                (columnOrder[i], columnOrder[randomIndex]) = (columnOrder[randomIndex], columnOrder[i]);
+            }
+            int pickupColumn = withPickup && pickupTemplate != null ? columnOrder[0] : -1;
+            int first = pickupColumn >= 0 ? 1 : 0;
+            int limit = Mathf.Min(maxBricksPerRow, columns - first);
+            int minimum = Mathf.Min(minBricksPerRow, limit);
+            float probability = TurnNumber > lateSpawnTurn ? lateSpawnProbability : earlySpawnProbability;
             int spawned = 0;
-            long baseRowHealth = (long)baseHealth + (long)(TurnNumber - 1) * healthPerTurn;
+            long baseRowHealth = Math.Max(1L, (long)TurnNumber * healthPerTurn);
             // 체력 2배 디버프는 그 뒤 처음 생기는 줄에 한 번 들어가. 그 벽돌들은 깨질 때까지 붉은 테두리가 남아.
             bool boosted = TurnEvents.TakeDoubleHealth();
             if (boosted)
                 baseRowHealth *= 2;
             int health = (int)Math.Min(int.MaxValue, baseRowHealth);
-            // 열 순서를 섞어서 왼쪽에만 몰리지 않게 해.
-            for (int i = 0; i < columns && spawned < maxBricksPerRow; i++)
-            {
-                int randomIndex = UnityEngine.Random.Range(i, columns);
-                int column = columnOrder[randomIndex];
-                columnOrder[randomIndex] = columnOrder[i];
-                columnOrder[i] = column;
-                if (spawnProbability <= 0f || (spawnProbability < 1f && UnityEngine.Random.value >= spawnProbability))
-                    continue;
-                Brick brick = pool.Pop();
-                cells[0, column] = brick;
-                brick.Spawn(this, 0, column, health, brickSize, ElementRules.RandomElement());
-                if (boosted)
-                    brick.SetBoosted(true);
-                spawned++;
-            }
-            SpawnPickups();
+            for (int i = first; i < columns && spawned < limit; i++)
+                if (UnityEngine.Random.value < probability)
+                    SpawnBrick(columnOrder[i], health, boosted, ref spawned);
+            for (int i = first; i < columns && spawned < minimum; i++)
+                if (cells[0, columnOrder[i]] == null)
+                    SpawnBrick(columnOrder[i], health, boosted, ref spawned);
+            if (pickupColumn >= 0)
+                SpawnPickup(pickupColumn);
             // 체력 2배 턴에는 경고 배너가 사라질 때 "×2"를 보여 줘. 얼음 때문에 다음 턴으로 미뤄진 줄은 생기자마자 보여 줘.
             if (boosted && TurnEvents.ActiveDebuff != Debuff.DoubleHealth)
                 RevealBoostedRow();
@@ -484,26 +530,24 @@ namespace ElementalBreaker
             }
         }
 
-        private void SpawnPickups()
+        private void SpawnBrick(int column, int health, bool boosted, ref int spawned)
         {
-            if (pickupTemplate == null)
+            Brick brick = pool.Pop();
+            cells[0, column] = brick;
+            brick.Spawn(this, 0, column, health, brickSize, ElementRules.RandomElement());
+            if (boosted)
+                brick.SetBoosted(true);
+            spawned++;
+        }
+
+        private void SpawnPickup(int column)
+        {
+            if (cells[0, column] != null || pickups[0, column] != null)
                 return;
-            int spawned = 0;
-            for (int i = 0; i < columns && spawned < maxPickupsPerRow; i++)
-            {
-                int randomIndex = UnityEngine.Random.Range(i, columns);
-                int column = columnOrder[randomIndex];
-                columnOrder[randomIndex] = columnOrder[i];
-                columnOrder[i] = column;
-                if (cells[0, column] != null || pickups[0, column] != null || pickupProbability <= 0f ||
-                    (pickupProbability < 1f && UnityEngine.Random.value >= pickupProbability))
-                    continue;
-                BoardPickup pickup = pickupPool.Pop();
-                pickups[0, column] = pickup;
-                pickup.Spawn(this, 0, column, Mathf.Min(cellSize.x, cellSize.y) * pickupSizeRatio,
-                    ElementRules.RandomElement());
-                spawned++;
-            }
+            BoardPickup pickup = pickupPool.Pop();
+            pickups[0, column] = pickup;
+            pickup.Spawn(this, 0, column, Mathf.Min(cellSize.x, cellSize.y) * pickupSizeRatio,
+                ElementRules.RandomElement());
         }
 
         public void Collect(BoardPickup pickup)
@@ -547,12 +591,12 @@ namespace ElementalBreaker
             brickGap = new Vector2(Mathf.Clamp(brickGap.x, 0f, boardSize.x / columns * 0.95f),
                 Mathf.Clamp(brickGap.y, 0f, boardSize.y / rows * 0.95f));
             maxBricksPerRow = Mathf.Clamp(maxBricksPerRow, 0, Mathf.Min(6, columns));
-            spawnProbability = Mathf.Clamp01(spawnProbability);
-            pickupProbability = Mathf.Clamp01(pickupProbability);
-            maxPickupsPerRow = Mathf.Clamp(maxPickupsPerRow, 0, columns);
+            minBricksPerRow = Mathf.Clamp(minBricksPerRow, 0, maxBricksPerRow);
+            earlySpawnProbability = Mathf.Clamp01(earlySpawnProbability);
+            lateSpawnProbability = Mathf.Clamp01(lateSpawnProbability);
+            lateSpawnTurn = Mathf.Max(1, lateSpawnTurn);
             pickupSizeRatio = Mathf.Clamp(pickupSizeRatio, 0.1f, 0.9f);
-            baseHealth = Mathf.Max(1, baseHealth);
-            healthPerTurn = Mathf.Max(0, healthPerTurn);
+            healthPerTurn = Mathf.Max(1, healthPerTurn);
             descentDuration = Mathf.Max(0f, descentDuration);
             bombRadius = Mathf.Max(0, bombRadius);
             bombDamageDivisor = Mathf.Max(1, bombDamageDivisor);

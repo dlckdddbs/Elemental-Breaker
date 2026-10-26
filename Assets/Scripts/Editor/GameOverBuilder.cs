@@ -21,6 +21,8 @@ namespace ElementalBreaker.Editor
         private const float PillHeight = 50f;
 
         private static readonly Color32 DimColor = new Color32(0x05, 0x09, 0x16, 0xA8);
+        // 카드 그림(남색 그라데이션)에 곱해져서 색조는 그대로 두고 20%쯤 어둡게 해.
+        private static readonly Color32 CardTint = new Color32(0xC8, 0xCC, 0xDB, 0xFF);
         private static readonly Color32 GoldColor = new Color32(0xFF, 0xE4, 0x8A, 0xFF);
         private static readonly Color32 DividerColor = new Color32(0xA0, 0xBE, 0xFF, 0x40);
         private static readonly Color32 StatsTint = new Color32(0x06, 0x0E, 0x26, 0x96);
@@ -65,6 +67,7 @@ namespace ElementalBreaker.Editor
 
             // 가운데 카드
             Image card = CreateImage("Card", dimRect, cardSprite, Image.Type.Simple, true);
+            card.color = CardTint;
             Place(card.rectTransform, Center, Center, new Vector2(0f, CardRaise), CardSize);
             RectTransform c = card.rectTransform;
             Text("Title", c, font, outline, "게임 오버", 38f, Color.white, new Vector2(0f, -50f), new Vector2(300f, 48f));

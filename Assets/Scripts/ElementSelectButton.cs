@@ -17,8 +17,9 @@ namespace ElementalBreaker
         [SerializeField] private BrickBoard board;
         [SerializeField] private BallLauncher launcher;
         [SerializeField] private ShopPanel shop;
-        [Tooltip("속성을 한 번 바꿀 때 드는 골드")]
-        [SerializeField, Min(0)] private int price = 1;
+        [Tooltip("속성을 한 번 바꿀 때 드는 골드야. 10턴마다 basePricePerTenTurns씩 올라(1~9턴 30, 10~19턴 35).")]
+        [SerializeField, Min(0)] private int basePrice = 30;
+        [SerializeField, Min(0)] private int basePricePerTenTurns = 5;
         [Header("버튼")]
         [Tooltip("버튼과 라벨을 묶은 칸이야. 발사 중에는 칸째 흐리게 해.")]
         [SerializeField] private CanvasGroup buttonGroup;
@@ -35,6 +36,9 @@ namespace ElementalBreaker
         private int shownElement = -1;
         private int shownCanPrepare = -1;
         private int shownGold = -1;
+        private int shownPrice = -1;
+
+        private int Price => basePrice + basePricePerTenTurns * board.PriceTier;
 
         public bool IsOpen => popover != null && popover.activeSelf;
 
@@ -97,7 +101,7 @@ namespace ElementalBreaker
             // 같은 속성을 다시 고르면 골드를 쓰지 않고 닫아.
             if (element == launcher.TurnElement)
                 GameAudio.Play(SoundCue.Select);
-            else if (board.Gold.TrySpend(price))
+            else if (board.Gold.TrySpend(Price))
             {
                 launcher.SetTurnElement(element);
                 GameAudio.Play(SoundCue.Purchase);
@@ -126,8 +130,10 @@ namespace ElementalBreaker
             }
             int element = (int)launcher.TurnElement;
             int gold = board.Gold.Amount;
-            if (element == shownElement && gold == shownGold)
+            int price = Price;
+            if (element == shownElement && gold == shownGold && price == shownPrice)
                 return;
+            shownPrice = price;
             if (element != shownElement)
             {
                 face.color = ElementRules.GetBrickTint(launcher.TurnElement);
