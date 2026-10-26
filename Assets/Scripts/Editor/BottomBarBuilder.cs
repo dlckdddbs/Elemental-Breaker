@@ -14,13 +14,14 @@ namespace ElementalBreaker.Editor
         private const string EffectFolder = "Assets/Art/Casual/Effects/";
         private const string FontPath = "Assets/Font/Jua/Jua-Regular UI SDF.asset";
         private const string OutlinePath = "Assets/Font/Jua/Jua-Regular UI SDF Outline.mat";
-        // 아래 띠 높이와 상단 정보판 영역 높이야(기준 해상도 480x854 픽셀).
-        public const float BarHeight = 124f;
+        // 하단 띠(회수선 ~ 화면 아래)와 상단 띠 높이야(기준 해상도 480x854 픽셀). 실행 중에는 PlayAreaBand가 선에 맞춰 바꿔.
+        public const float BarHeight = 148f;
         private const float HudHeight = TopHudBuilder.HudHeight;
-        // 아래 띠의 판은 양옆 10, 아래 8, 위 4 여백을 둬. 판 안에서 버튼 가운데는 바닥에서 70, 라벨은 17.
+        // 버튼 가운데는 화면 바닥에서 91, 라벨은 37. 버튼 아래 테두리의 알약(가격, 폭탄 데미지)과 라벨 사이를 띄워.
         private const float ButtonSize = 62f;
-        private const float ButtonY = 70f;
-        private const float LabelY = 17f;
+        private const float ButtonY = 91f;
+        private const float LabelY = 37f;
+        private static readonly Color32 DamageColor = new Color32(0xFF, 0xC2, 0x66, 0xFF);
         private const float LabelSize = 15f;
 
         // 회색 판(밝기 225)에 곱해져서 화면에서 원하는 색으로 보이는 값이야.
@@ -32,8 +33,20 @@ namespace ElementalBreaker.Editor
         private static readonly Color32 DimColor = new Color32(0x0B, 0x0E, 0x1F, 0x8C);
         // 아래 띠 버튼 세 개의 파란 판이야. 회색 판(밝기 225)에 곱해져.
         private static readonly Color32 ButtonTint = new Color32(0x3C, 0x66, 0xE6, 0xFF);
-        private static readonly Color32 DividerColor = new Color32(0xA0, 0xBE, 0xFF, 0x2E);
         private static readonly Color Muted = new Color(1f, 1f, 1f, 0.67f);
+        // 폭탄 취소 알림: 어두운 알약에 빨간 테두리와 "!" 표시. 아이템 칸 가운데에서 왼쪽으로 64만큼 나와서 좁은 폰에서도 화면 안에 들어와.
+        private static readonly Vector2 ToastSize = new Vector2(252f, 36f);
+        private const float ToastY = 136f;
+        private const float ToastTailX = 64f;
+        private static readonly Color32 ToastColor = new Color32(0x10, 0x16, 0x30, 0xF2);
+        private static readonly Color32 ToastEdgeColor = new Color32(0xFF, 0x78, 0x78, 0xB3);
+        private static readonly Color32 AlertColor = new Color32(0xFF, 0x6B, 0x6B, 0xFF);
+        // 새로 열린 아이템의 NEW 표시와 잠긴 카드의 자물쇠 바탕이야.
+        private static readonly Color32 NewTint = new Color32(0xFF, 0x4D, 0x5E, 0xFF);
+        private static readonly Color32 LockBackTint = new Color32(0x14, 0x1B, 0x3A, 0xFF);
+        // 아이템 금지 턴의 버튼 덮개(회색 판에 곱해져 어두운 남색 반투명)와 자물쇠 색이야.
+        private static readonly Color32 BanCoverTint = new Color32(0x0A, 0x0E, 0x22, 0x9C);
+        private static readonly Color32 BanLockTint = new Color32(0xFF, 0x8A, 0x80, 0xFF);
 
         private static readonly Vector2 BottomLeft = new Vector2(0f, 0f);
         private static readonly Vector2 BottomRight = new Vector2(1f, 0f);
@@ -78,11 +91,12 @@ namespace ElementalBreaker.Editor
             // 폭탄은 실행 중에 이번 턴 속성의 아이콘으로 바뀌어. 처음에는 일반 폭탄을 넣어 둬.
             Sprite bombIcon = Load("ui_bomb_normal"), ice = Load("ui_ice");
             Sprite bag = Load("ui_bag"), chevron = Load("ui_chevron"), cycle = Load("ui_cycle_arrow"), brick = Load("brick_base");
-            Sprite coin = Load("fx_coin");
+            Sprite coin = Load("fx_coin"), lockIcon = Load("ui_lock");
             Sprite ring = AssetDatabase.LoadAssetAtPath<Sprite>(EffectFolder + "fx_ring.png");
             Sprite[] icons = { Load("ui_icon_normal"), Load("ui_icon_fire"), Load("ui_icon_water"), Load("ui_icon_grass") };
             if (slot == null || dash == null || circle == null || pill == null || panelSprite == null || bombIcon == null || ice == null ||
-                bag == null || chevron == null || cycle == null || brick == null || coin == null || ring == null || icons[0] == null)
+                bag == null || chevron == null || cycle == null || brick == null || coin == null || ring == null || icons[0] == null ||
+                lockIcon == null)
             {
                 Notify("UI 이미지 일부를 찾지 못했어. Assets/Art/Casual을 확인해.");
                 return false;
@@ -97,12 +111,15 @@ namespace ElementalBreaker.Editor
             dimRect.anchorMin = Vector2.zero; dimRect.anchorMax = Vector2.one;
             dimRect.offsetMin = new Vector2(0f, BarHeight); dimRect.offsetMax = new Vector2(0f, -HudHeight);
             dim.color = DimColor;
+            // 두 띠 사이(게임판)만 덮게 실행 중에 선 위치로 맞춰.
+            dim.gameObject.AddComponent<PlayAreaBand>().Configure(PlayAreaBand.Mode.Between, 0f);
             Button dimButton = AddButton(dim.gameObject, false);
             dim.transform.SetSiblingIndex(sibling++);
 
             // 상점 목록: 버튼 위로 펼쳐져. 위 구역은 보관형, 아래 구역은 바로 적용.
             RectTransform list = CreateRect("ShopList", canvas.transform);
             Place(list, BottomRight, new Vector2(1f, 0f), new Vector2(-14f, BarHeight + 8f), new Vector2(290f, 300f));
+            list.gameObject.AddComponent<PlayAreaBand>().Configure(PlayAreaBand.Mode.AboveBottom, 8f);
             list.SetSiblingIndex(sibling++);
             // 제목과 카드 전체를 판 위에 올려서 뒤의 벽돌과 겹쳐도 잘 읽혀. 판을 눌러도 상점이 닫히지 않아.
             Image listBack = CreateImage("Back", list, panelSprite, Image.Type.Sliced, true);
@@ -128,28 +145,27 @@ namespace ElementalBreaker.Editor
             Place(brickCard.iconBadge.rectTransform, BottomLeft, Center, new Vector2(28f, 35f), new Vector2(12f, 12f));
             brickCard.iconOverlay = CreateImage("Cycle", brickCard.group.transform, cycle, Image.Type.Simple, false);
             Place(brickCard.iconOverlay.rectTransform, BottomLeft, Center, new Vector2(36f, 31f), new Vector2(46f, 46f));
+            // NEW와 자물쇠는 아이콘보다 위에 오게 아이콘을 다 만든 뒤에 붙여.
+            AddCardMarks(bombCard, pill, circle, lockIcon);
+            AddCardMarks(iceCard, pill, circle, lockIcon);
+            AddCardMarks(brickCard, pill, circle, lockIcon);
 
             // 아래 띠. 컨테이너 자체는 입력을 막지 않아서 빈 곳에서는 조준이 그대로 돼.
             RectTransform bar = CreateRect("BottomBar", canvas.transform);
             bar.anchorMin = BottomLeft; bar.anchorMax = BottomRight; bar.pivot = new Vector2(0.5f, 0f);
             bar.sizeDelta = new Vector2(0f, BarHeight); bar.anchoredPosition = Vector2.zero;
             bar.SetSiblingIndex(sibling++);
+            // 높이는 실행 중에 회수선 위치로 맞춰. 바탕은 따로 칠하지 않아서 게임 배경이 그대로 이어져.
+            // 컨테이너는 터치를 받지 않아서 버튼 밖 빈 곳에서도 조준과 2배속이 그대로 돼.
+            bar.gameObject.AddComponent<PlayAreaBand>().Configure(PlayAreaBand.Mode.Bottom, 0f);
 
-            // 판: 버튼 세 개를 감싸. 터치는 받지 않아서 판 위 빈 곳에서도 조준과 2배속이 그대로 돼.
-            Image barPanel = CreateImage("Panel", bar, panelSprite, Image.Type.Sliced, false);
-            RectTransform panel = barPanel.rectTransform;
-            panel.anchorMin = Vector2.zero;
-            panel.anchorMax = Vector2.one;
-            panel.offsetMin = new Vector2(10f, 8f);
-            panel.offsetMax = new Vector2(-10f, -4f);
-            Divider(panel, 1f / 3f);
-            Divider(panel, 2f / 3f);
-            // 칸 가운데: 판 폭의 1/6, 1/2, 5/6. 라벨 세 개는 같은 줄이야.
-            Vector2 leftColumn = new Vector2(1f / 6f, 0f), rightColumn = new Vector2(5f / 6f, 0f);
+            // 칸 가운데: 화면 폭의 1/6, 1/2, 5/6. 라벨 세 개는 같은 줄이야.
+            // 공 속성과 상점은 화면 폭 1/3씩인 칸 안의 가운데에 놓여.
+            Vector2 leftColumn = new Vector2(1f / 6f, 0f);
             Vector2 buttonSize = new Vector2(ButtonSize, ButtonSize), labelRect = new Vector2(120f, 20f);
 
             // 왼쪽: 아이템 칸. 비어 있으면 점선과 "+", 쓸 수 있으면 금색 빛
-            Image slotImage = CreateImage("ItemSlot", panel, slot, Image.Type.Sliced, true);
+            Image slotImage = CreateImage("ItemSlot", bar, slot, Image.Type.Sliced, true);
             slotImage.color = ButtonTint;
             Place(slotImage.rectTransform, leftColumn, Center, new Vector2(0f, ButtonY), buttonSize);
             Button slotButton = AddButton(slotImage.gameObject, false);
@@ -161,10 +177,20 @@ namespace ElementalBreaker.Editor
             Text("Plus", empty.transform, "+", 24f, new Color(1f, 1f, 1f, 0.5f), false, Center, Center, new Vector2(0f, 1f), new Vector2(30f, 30f), TextAlignmentOptions.Midline);
             Image itemBody = CreateImage("ItemBody", slotImage.transform, bombIcon, Image.Type.Simple, false);
             Place(itemBody.rectTransform, Center, Center, new Vector2(0f, 2.5f), new Vector2(45f, 45f));
-            TMP_Text slotLabel = Text("ItemLabel", panel, "아이템", LabelSize, Color.white, false, leftColumn, Center, new Vector2(0f, LabelY), labelRect, TextAlignmentOptions.Midline);
+            // 폭탄 데미지: 공 속성 가격처럼 버튼 아래 테두리에 겹친 알약 [✸ 6]. 폭탄을 들고 있을 때만 보여.
+            Image damage = CreateImage("Damage", slotImage.transform, pill, Image.Type.Sliced, false);
+            damage.color = PriceTint;
+            damage.pixelsPerUnitMultiplier = 50f / 19f;
+            Place(damage.rectTransform, Center, Center, new Vector2(0f, -ButtonSize * 0.5f + 1f), new Vector2(42f, 19f));
+            Image burst = CreateImage("Burst", damage.transform, Load("fx_bomb_star"), Image.Type.Simple, false);
+            Place(burst.rectTransform, Center, Center, new Vector2(-9f, 0.5f), new Vector2(14f, 14f));
+            TMP_Text damageLabel = Text("Amount", damage.transform, "1", 12.5f, DamageColor, true, Center, Center, new Vector2(7f, 1f), new Vector2(24f, 18f), TextAlignmentOptions.Midline);
+            damage.gameObject.SetActive(false);
+            TMP_Text slotLabel = Text("ItemLabel", bar, "아이템", LabelSize, Color.white, false, leftColumn, Center, new Vector2(0f, LabelY), labelRect, TextAlignmentOptions.Midline);
+            CanvasGroup cancelToast = CreateCancelToast(bar, leftColumn, pill, circle);
 
             // 가운데: 공 속성. 버튼과 라벨을 한 칸으로 묶어서 발사 중에는 칸째 흐리게 해.
-            RectTransform elementCell = CreateRect("ElementSelect", panel);
+            RectTransform elementCell = CreateRect("ElementSelect", bar);
             elementCell.anchorMin = new Vector2(1f / 3f, 0f);
             elementCell.anchorMax = new Vector2(2f / 3f, 1f);
             elementCell.offsetMin = elementCell.offsetMax = Vector2.zero;
@@ -184,14 +210,21 @@ namespace ElementalBreaker.Editor
             TMP_Text facePrice = PricePill(faceButtonImage.transform, new Vector2(0f, -ButtonSize * 0.5f + 1f), new Vector2(42f, 19f), pill, coin, 12.5f);
             Text("Label", elementCell, "공 속성", LabelSize, Color.white, false, BottomCenter, Center, new Vector2(0f, LabelY), labelRect, TextAlignmentOptions.Midline);
 
-            // 오른쪽: 상점 버튼 (다른 버튼과 같은 파란 판, 가방 아이콘만 노란색)
-            Image shopImage = CreateImage("ShopButton", panel, slot, Image.Type.Sliced, true);
+            // 오른쪽: 상점 (다른 버튼과 같은 파란 판, 가방 아이콘만 노란색). 공 속성처럼 버튼과 라벨을 한 칸으로 묶어서 발사 중에는 칸째 흐리게 해.
+            RectTransform shopCell = CreateRect("Shop", bar);
+            shopCell.anchorMin = new Vector2(2f / 3f, 0f);
+            shopCell.anchorMax = new Vector2(1f, 1f);
+            shopCell.offsetMin = shopCell.offsetMax = Vector2.zero;
+            CanvasGroup shopGroup = shopCell.gameObject.AddComponent<CanvasGroup>();
+            Image shopImage = CreateImage("ShopButton", shopCell, slot, Image.Type.Sliced, true);
             shopImage.color = ButtonTint;
-            Place(shopImage.rectTransform, rightColumn, Center, new Vector2(0f, ButtonY), buttonSize);
+            Place(shopImage.rectTransform, BottomCenter, Center, new Vector2(0f, ButtonY), buttonSize);
             Button shopButton = AddButton(shopImage.gameObject, false);
             Image bagIcon = CreateImage("Bag", shopImage.transform, bag, Image.Type.Simple, false);
             Place(bagIcon.rectTransform, Center, Center, new Vector2(0f, 3f), new Vector2(40f, 40f));
-            TMP_Text shopLabel = Text("ShopLabel", panel, "상점", LabelSize, Color.white, false, rightColumn, Center, new Vector2(0f, LabelY), labelRect, TextAlignmentOptions.Midline);
+            TMP_Text shopLabel = Text("ShopLabel", shopCell, "상점", LabelSize, Color.white, false, BottomCenter, Center, new Vector2(0f, LabelY), labelRect, TextAlignmentOptions.Midline);
+            // 새로 열린 아이템이 있으면 버튼 오른쪽 위 모서리에 NEW가 붙어.
+            GameObject shopNew = NewTag(shopImage.transform, pill, new Vector2(27f, 28f));
 
             // 공 속성 선택지: 바깥을 누르면 닫히는 투명 막 + 버튼 위로 펼쳐지는 창
             Image blocker = CreateImage("ElementBlocker", canvas.transform, null, Image.Type.Simple, true);
@@ -204,6 +237,7 @@ namespace ElementalBreaker.Editor
             Image popover = CreateImage("ElementPopover", canvas.transform, slot, Image.Type.Sliced, true);
             popover.color = PopoverTint;
             Place(popover.rectTransform, BottomCenter, new Vector2(0.5f, 0f), new Vector2(0f, BarHeight + 4f), new Vector2(268f, 96f));
+            popover.gameObject.AddComponent<PlayAreaBand>().Configure(PlayAreaBand.Mode.AboveBottom, 4f);
             popover.transform.SetSiblingIndex(sibling++);
             string[] names = { "일반", "불", "물", "풀" };
             Button[] options = new Button[4];
@@ -222,15 +256,28 @@ namespace ElementalBreaker.Editor
                 Text("Name", popover.transform, names[i], 13f, Color.white, true, Center, Center, pos + new Vector2(0f, -35f), new Vector2(60f, 18f), TextAlignmentOptions.Midline);
             }
 
+            // 아이템 금지 턴: 세 버튼 위 자물쇠와, 누른 버튼을 가리키는 말풍선. 말풍선은 칸들보다 위에 그려.
+            Button[] banLocks =
+            {
+                BanLock(slotImage.transform, slot, circle, lockIcon),
+                BanLock(faceButtonImage.transform, slot, circle, lockIcon),
+                BanLock(shopImage.transform, slot, circle, lockIcon)
+            };
+            CanvasGroup banToast = CreateToast("BanToast", bar, BottomLeft, new Vector2(16f, ToastY), "이번 턴은 사용할 수 없어요",
+                pill, circle, out RectTransform banTail);
+
             // 동작 스크립트는 항상 켜져 있는 아래 띠에 붙여. 숨겨지는 버튼에 붙이면 다시 켤 수 없어.
             ItemSlotButton slotScript = bar.gameObject.AddComponent<ItemSlotButton>();
             ShopPanel shop = bar.gameObject.AddComponent<ShopPanel>();
             ElementSelectButton select = bar.gameObject.AddComponent<ElementSelectButton>();
+            ItemBanLocks banScript = bar.gameObject.AddComponent<ItemBanLocks>();
 
             SerializedObject so = new SerializedObject(slotScript);
             Set(so, "board", board); Set(so, "launcher", launcher); Set(so, "button", slotButton);
             Set(so, "emptyFrame", empty); Set(so, "readyGlow", glow); Set(so, "itemBody", itemBody);
             Set(so, "label", slotLabel); Set(so, "iceIcon", ice);
+            Set(so, "damageBadge", damage.rectTransform); Set(so, "damageLabel", damageLabel);
+            Set(so, "cancelToast", cancelToast);
             so.ApplyModifiedPropertiesWithoutUndo();
 
             so = new SerializedObject(select);
@@ -246,9 +293,16 @@ namespace ElementalBreaker.Editor
 
             so = new SerializedObject(shop);
             Set(so, "board", board); Set(so, "launcher", launcher); Set(so, "elementSelect", select);
-            Set(so, "shopButton", shopButton); Set(so, "shopFace", shopImage); Set(so, "shopLabel", shopLabel);
+            Set(so, "shopGroup", shopGroup); Set(so, "shopButton", shopButton); Set(so, "shopLabel", shopLabel);
+            Set(so, "shopNewBadge", shopNew);
             Set(so, "list", list.gameObject); Set(so, "dimOverlay", dimButton);
             SetCard(so, "bombCard", bombCard); SetCard(so, "iceCard", iceCard); SetCard(so, "brickChangeCard", brickCard);
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            so = new SerializedObject(banScript);
+            Set(so, "board", board); Set(so, "toast", banToast); Set(so, "toastTail", banTail);
+            for (int i = 0; i < banLocks.Length; i++)
+                so.FindProperty("locks").GetArrayElementAtIndex(i).objectReferenceValue = banLocks[i];
             so.ApplyModifiedPropertiesWithoutUndo();
 
             dim.gameObject.SetActive(false);
@@ -269,14 +323,6 @@ namespace ElementalBreaker.Editor
             return true;
         }
 
-        // 판 안의 세로 구분선이야. x는 판 폭 대비 위치야.
-        private static void Divider(RectTransform panel, float x)
-        {
-            Image line = CreateImage("Divider", panel, null, Image.Type.Simple, false);
-            line.color = DividerColor;
-            Place(line.rectTransform, new Vector2(x, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 12f), new Vector2(1f, 88f));
-        }
-
         private static ShopPanel.Card CreateCard(string name, Transform list, float y, string title, Sprite panel, Sprite circle, Sprite pill, Sprite coin)
         {
             Image card = CreateImage(name, list, panel, Image.Type.Sliced, true);
@@ -288,6 +334,8 @@ namespace ElementalBreaker.Editor
             Place(back.rectTransform, BottomLeft, Center, new Vector2(36f, 31f), new Vector2(50f, 53f));
             Text("Name", card.transform, title, 19f, Color.white, true, BottomLeft, new Vector2(0f, 0.5f), new Vector2(70f, 44f), new Vector2(150f, 26f), TextAlignmentOptions.MidlineLeft);
             result.description = Text("Description", card.transform, "", 12.5f, Muted, false, BottomLeft, new Vector2(0f, 0.5f), new Vector2(70f, 21f), new Vector2(160f, 20f), TextAlignmentOptions.MidlineLeft);
+            // 카드가 흐려져도 이유("6턴에 열려요", "골드가 부족해요")는 또렷하게 읽혀.
+            result.description.gameObject.AddComponent<CanvasGroup>().ignoreParentGroups = true;
             Image price = CreateImage("Price", card.transform, pill, Image.Type.Sliced, true);
             price.color = PriceTint;
             price.pixelsPerUnitMultiplier = 50f / 32f;
@@ -297,6 +345,93 @@ namespace ElementalBreaker.Editor
             Place(coinImage.rectTransform, Center, Center, new Vector2(-11f, 1.5f), new Vector2(20f, 20f));
             result.priceLabel = Text("Amount", price.transform, "1", 18f, Color.white, true, Center, Center, new Vector2(10f, 1.5f), new Vector2(26f, 24f), TextAlignmentOptions.Midline);
             return result;
+        }
+
+        // 폭탄 취소 알림 말풍선이야. 아이템 칸 위에 떠서 꼬리가 칸 가운데를 가리켜. 평소에는 꺼 두고 ItemSlotButton이 잠깐 켜.
+        private static CanvasGroup CreateCancelToast(RectTransform bar, Vector2 column, Sprite pill, Sprite circle) =>
+            CreateToast("CancelToast", bar, column, new Vector2(-ToastTailX, ToastY), "근처에 벽돌이 없어 취소했어요", pill, circle, out _);
+
+        // 말풍선 하나를 만들어. anchor·position은 아래 띠 기준이고 말풍선 왼쪽 아래가 그 자리야. 꼬리는 왼쪽에서 ToastTailX에 있어.
+        private static CanvasGroup CreateToast(string name, RectTransform bar, Vector2 anchor, Vector2 position, string message,
+            Sprite pill, Sprite circle, out RectTransform tailRect)
+        {
+            RectTransform toast = CreateRect(name, bar);
+            Place(toast, anchor, BottomLeft, position, ToastSize);
+            CanvasGroup group = toast.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            group.interactable = false;
+            // 빨간 테두리는 한 겹 큰 알약을 뒤에 깔아서 만들어. 꼬리가 아래 테두리를 덮어서 말풍선처럼 이어져.
+            Image edge = CreateImage("Edge", toast, pill, Image.Type.Sliced, false);
+            edge.color = ToastEdgeColor;
+            edge.pixelsPerUnitMultiplier = 50f / (ToastSize.y + 3f);
+            Place(edge.rectTransform, Center, Center, Vector2.zero, ToastSize + new Vector2(3f, 3f));
+            Image tail = CreateImage("Tail", toast, null, Image.Type.Simple, false);
+            tail.color = ToastColor;
+            Place(tail.rectTransform, BottomLeft, Center, new Vector2(ToastTailX, 0f), new Vector2(11.3f, 11.3f));
+            tail.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            tailRect = tail.rectTransform;
+            Image fill = CreateImage("Fill", toast, pill, Image.Type.Sliced, false);
+            fill.color = ToastColor;
+            fill.pixelsPerUnitMultiplier = 50f / ToastSize.y;
+            Place(fill.rectTransform, Center, Center, Vector2.zero, ToastSize);
+            Image alert = CreateImage("Alert", toast, circle, Image.Type.Simple, false);
+            alert.color = AlertColor;
+            Place(alert.rectTransform, new Vector2(0f, 0.5f), Center, new Vector2(22f, 0f), new Vector2(20f, 21.4f));
+            Text("Mark", alert.transform, "!", 15f, Color.white, false, Center, Center, new Vector2(0f, 1f), new Vector2(20f, 20f), TextAlignmentOptions.Midline);
+            Text("Message", toast, message, 15f, Color.white, false, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(38f, 1f), new Vector2(ToastSize.x - 44f, 24f), TextAlignmentOptions.MidlineLeft);
+            toast.gameObject.SetActive(false);
+            return group;
+        }
+
+        // 아이템 금지 턴에 버튼 위를 덮는 자물쇠야. 버튼과 같은 모양의 어두운 판에 자물쇠를 올리고, 누르면 금지 알림이 떠.
+        // 공 속성과 상점 칸은 흐려진 상태라 그 흐림을 따르지 않고 또렷하게 보여.
+        private static Button BanLock(Transform button, Sprite slot, Sprite circle, Sprite lockIcon)
+        {
+            Image cover = CreateImage("BanLock", button, slot, Image.Type.Sliced, true);
+            cover.color = BanCoverTint;
+            Place(cover.rectTransform, Center, Center, Vector2.zero, new Vector2(ButtonSize, ButtonSize));
+            cover.gameObject.AddComponent<CanvasGroup>().ignoreParentGroups = true;
+            Image back = CreateImage("Back", cover.transform, circle, Image.Type.Simple, false);
+            back.color = LockBackTint;
+            Place(back.rectTransform, Center, Center, new Vector2(0f, 2f), new Vector2(34f, 36f));
+            Image glyph = CreateImage("Icon", back.transform, lockIcon, Image.Type.Simple, false);
+            glyph.color = BanLockTint;
+            Place(glyph.rectTransform, Center, Center, new Vector2(0f, 1.5f), new Vector2(20f, 20f));
+            Button lockButton = AddButton(cover.gameObject, false);
+            cover.gameObject.SetActive(false);
+            return lockButton;
+        }
+
+        // 카드 오른쪽 위 NEW와 아이콘 위 자물쇠야. 둘 다 카드가 흐려져도 또렷하게 보이고, 평소에는 꺼 둬.
+        private static void AddCardMarks(ShopPanel.Card card, Sprite pill, Sprite circle, Sprite lockIcon)
+        {
+            Transform cardTransform = card.group.transform;
+            card.newTag = NewTag(cardTransform, pill, Vector2.zero);
+            Place((RectTransform)card.newTag.transform, BottomLeft, Center, new Vector2(264f, 64f), new Vector2(38f, 18f));
+            card.newTag.AddComponent<CanvasGroup>().ignoreParentGroups = true;
+
+            Image lockBack = CreateImage("Lock", cardTransform, circle, Image.Type.Simple, false);
+            lockBack.color = LockBackTint;
+            Place(lockBack.rectTransform, BottomLeft, Center, new Vector2(54f, 16f), new Vector2(26f, 28f));
+            lockBack.gameObject.AddComponent<CanvasGroup>().ignoreParentGroups = true;
+            Image lockGlyph = CreateImage("Icon", lockBack.transform, lockIcon, Image.Type.Simple, false);
+            lockGlyph.color = GlowColor;
+            Place(lockGlyph.rectTransform, Center, Center, new Vector2(0f, 1.5f), new Vector2(15f, 15f));
+            lockBack.gameObject.SetActive(false);
+            card.lockBadge = lockBack.gameObject;
+        }
+
+        // [NEW] 빨간 알약이야. position은 부모 가운데 기준이고 꺼 둔 채로 만들어.
+        private static GameObject NewTag(Transform parent, Sprite pill, Vector2 position)
+        {
+            Image tag = CreateImage("New", parent, pill, Image.Type.Sliced, false);
+            tag.color = NewTint;
+            tag.pixelsPerUnitMultiplier = 50f / 18f;
+            Place(tag.rectTransform, Center, Center, position, new Vector2(38f, 18f));
+            Text("Label", tag.transform, "NEW", 12f, Color.white, true, Center, Center, new Vector2(0f, 0.5f), new Vector2(38f, 18f), TextAlignmentOptions.Midline);
+            tag.gameObject.SetActive(false);
+            return tag.gameObject;
         }
 
         private static TMP_Text PricePill(Transform parent, Vector2 position, Vector2 size, Sprite pill, Sprite coin, float fontSize)
@@ -319,6 +454,8 @@ namespace ElementalBreaker.Editor
             Set(so, field + ".iconBody", card.iconBody);
             Set(so, field + ".iconOverlay", card.iconOverlay);
             Set(so, field + ".iconBadge", card.iconBadge);
+            Set(so, field + ".newTag", card.newTag);
+            Set(so, field + ".lockBadge", card.lockBadge);
         }
 
         private static void Set(SerializedObject so, string path, Object value)

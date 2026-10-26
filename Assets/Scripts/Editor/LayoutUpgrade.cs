@@ -10,7 +10,9 @@ namespace ElementalBreaker.Editor
     // 1) 게임판을 통째로 0.33 아래로 내려서 상단 정보판 자리를 넓혀. 게임판 크기와 공이 날아가는 거리는 그대로야.
     //    옮기는 것: 벽 세 개와 회수 영역(Collider2D가 있는 최상위 오브젝트), 발사 위치(LaunchPoint), 발사기(Launcher), 벽돌 판 가운데(BrickBoard)
     //    위쪽 경계선과 회수선은 BoardPresentation이 벽과 회수 영역을 따라 자동으로 맞춰.
-    // 2) 상단 정보판과 아래 띠·상점을 지우고 새 배치로 다시 만들어.
+    // 2) 상단 띠와 하단 띠·상점을 지우고 새 배치로 다시 만들어. 띠는 화면 끝에서 끝까지 채우고, 끝은 경계선과 회수선에 맞춰.
+    // 3) 턴 보상 배너(N턴 도달!)를 다시 만들어. 바탕 그림 ui_reward_banner.png가 있으면 그 그림을 써.
+    // 4) 게임 오버 패널을 새 결과 카드로 바꿔. 다른 UI보다 위에 오게 맨 마지막에 만들어.
     public static class LayoutUpgrade
     {
         // 화면에서 28px(기준 해상도 480x854)만큼이야.
@@ -18,7 +20,7 @@ namespace ElementalBreaker.Editor
         // 처음 배치의 벽돌 판 가운데 높이야. 이 값일 때만 내려서 두 번 눌러도 두 번 내려가지 않아.
         private const float OriginalBoardY = 0.15f;
 
-        [MenuItem("Elemental Breaker/Apply Layout v2 (게임판 내리기 + 상단·하단 판)")]
+        [MenuItem("Elemental Breaker/Apply Layout (게임판 내리기 + 상단·하단 띠)")]
         private static void Apply()
         {
             BrickBoard board = Object.FindFirstObjectByType<BrickBoard>();
@@ -34,13 +36,13 @@ namespace ElementalBreaker.Editor
                 EditorUtility.DisplayDialog("Layout v2", "플레이를 멈춘 뒤 실행해.", "확인");
                 return;
             }
-            Undo.SetCurrentGroupName("Apply Layout v2");
+            Undo.SetCurrentGroupName("Apply Layout");
             int undoGroup = Undo.GetCurrentGroup();
             string moved = ShiftBoard(board, launcher);
             RebuildUi(canvas);
             Undo.CollapseUndoOperations(undoGroup);
             EditorSceneManager.MarkSceneDirty(board.gameObject.scene);
-            Debug.Log("배치 2판을 적용했어. " + moved + " 상단 정보판과 아래 띠를 새로 만들었어. 확인하고 Ctrl+S로 씬을 저장해.");
+            Debug.Log("배치를 적용했어. " + moved + " 상단 띠와 하단 띠를 새로 만들었어. 확인하고 Ctrl+S로 씬을 저장해.");
         }
 
         private static string ShiftBoard(BrickBoard board, BallLauncher launcher)
@@ -67,7 +69,7 @@ namespace ElementalBreaker.Editor
                 // 같은 오브젝트는 한 번만, 목록에 있는 오브젝트의 자식이면 부모와 같이 움직이니 건너뛰어.
                 if (!movedSet.Add(target) || HasAncestorIn(target, targets))
                     continue;
-                Undo.RecordObject(target, "Apply Layout v2");
+                Undo.RecordObject(target, "Apply Layout");
                 target.position += Vector3.down * BoardShift;
                 names.Append(", ").Append(target.name);
             }
@@ -86,14 +88,15 @@ namespace ElementalBreaker.Editor
         {
             List<string> names = new List<string> { "TopHUD" };
             names.AddRange(BottomBarBuilder.CreatedNames);
+            names.AddRange(RewardBannerBuilder.CreatedNames);
             foreach (string name in names)
             {
                 Transform old = canvas.transform.Find(name);
                 if (old != null)
                     Undo.DestroyObjectImmediate(old.gameObject);
             }
-            if (TopHudBuilder.Create())
-                BottomBarBuilder.Create();
+            if (TopHudBuilder.Create() && BottomBarBuilder.Create() && RewardBannerBuilder.Create())
+                GameOverBuilder.Create();
         }
     }
 }

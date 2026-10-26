@@ -7,8 +7,9 @@ namespace ElementalBreaker
     // 배속 중에만 상단 정보 아래에 표시해. 터치는 받지 않아.
     public sealed class FastForwardBadge : MonoBehaviour
     {
-        // 상단 정보판(높이 121) 바로 아래, 게임판 위쪽 빈 띠에 떠.
+        // 상단 띠(화면 위 ~ 위쪽 경계선) 바로 아래, 게임판 위쪽 빈 칸에 떠. 처음 자리이고 실행 중에는 경계선을 따라가.
         private const float BadgeTop = -127f;
+        private const float BelowTopBand = 9f;
         // 얼음 상태 표시가 맨 위 빈 칸 가운데에 떠 있으면 ×2를 이만큼 오른쪽으로 비켜.
         private const float AsideOffset = 124f;
 
@@ -39,6 +40,7 @@ namespace ElementalBreaker
             rect.pivot = new Vector2(0.5f, 1f);
             rect.anchoredPosition = new Vector2(0f, BadgeTop);
             badge.badgeRect = rect;
+            background.gameObject.AddComponent<PlayAreaBand>().Configure(PlayAreaBand.Mode.BelowTop, BelowTopBand);
             rect.sizeDelta = new Vector2(68f, 32f);
             background.color = new Color32(30, 27, 61, 210);
             background.raycastTarget = false;
@@ -66,7 +68,7 @@ namespace ElementalBreaker
         public void SetVisible(bool visible) => canvas.enabled = visible;
 
         // 얼음 상태 표시와 겹치지 않게 오른쪽으로 비키거나 가운데로 돌아와.
-        public void SetAside(bool aside) => badgeRect.anchoredPosition = new Vector2(aside ? AsideOffset : 0f, BadgeTop);
+        public void SetAside(bool aside) => badgeRect.anchoredPosition = new Vector2(aside ? AsideOffset : 0f, badgeRect.anchoredPosition.y);
 
         private void LateUpdate()
         {

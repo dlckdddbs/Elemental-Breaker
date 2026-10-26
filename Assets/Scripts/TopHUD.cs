@@ -55,10 +55,17 @@ namespace ElementalBreaker
         [SerializeField] private RectTransform acquiredBadge;
         [SerializeField] private TMP_Text acquiredLabel;
 
+        // 턴 보상 동전이 날아가 닿는 골드 아이콘이야.
+        public RectTransform GoldIcon => goldIcon;
+
         private int shownTurn = -1;
         private int shownGold = -1;
         private int shownBalls = -1;
         private int shownAcquired = -1;
+        private int shownLaunch = -1;
+        // "공 절반" 디버프 턴에는 공 수가 이 색으로 "공 ×4/7"처럼 보여.
+        private static readonly Color32 HalvedColor = new Color32(0xFF, 0x8A, 0x7A, 0xFF);
+        private Color ballLabelColor = Color.white;
         private bool elementShown;
         private ElementType shownElement;
         private ElementType shownNext;
@@ -72,6 +79,8 @@ namespace ElementalBreaker
         {
             goldGetter = () => goldDisplay;
             goldSetter = SetGoldDisplay;
+            if (ballLabel != null)
+                ballLabelColor = ballLabel.color;
         }
 
         private void LateUpdate()
@@ -97,6 +106,8 @@ namespace ElementalBreaker
                 nextGroup.DOKill(true);
             if (acquiredBadge != null)
                 acquiredBadge.DOKill(true);
+            if (ballLabel != null)
+                ballLabel.rectTransform.DOKill(true);
         }
 
         private void RefreshTurn()
@@ -185,13 +196,24 @@ namespace ElementalBreaker
         {
             int balls = launcher.ActiveBallCount;
             int acquired = launcher.AcquiredBallCount;
-            if (balls == shownBalls && acquired == shownAcquired)
+            int launch = launcher.LaunchCount;
+            if (balls == shownBalls && acquired == shownAcquired && launch == shownLaunch)
                 return;
             bool popAcquired = shownAcquired >= 0 && acquired > shownAcquired;
+            // 턴이 끝나 얻은 공이 합류하면 "+N"이 사라지고 공 개수가 톡 튀어.
+            bool popCount = shownBalls >= 0 && balls > shownBalls;
+            // "공 절반" 디버프 턴이 되면 이번 턴에 쏠 공 수를 빨갛게 앞에 붙이고 톡 튀어.
+            bool halved = launch < balls;
+            popCount |= halved && shownLaunch >= 0 && launch != shownLaunch;
             shownBalls = balls;
             shownAcquired = acquired;
-            ballLabel.SetText("공 ×{0}", balls);
-            // 이번 턴에 얻은 공은 다음 턴에 합류하니까 "+N"으로 따로 보여 줘.
+            shownLaunch = launch;
+            if (halved)
+                ballLabel.SetText("공 ×{0}/{1}", launch, balls);
+            else
+                ballLabel.SetText("공 ×{0}", balls);
+            ballLabel.color = halved ? (Color)HalvedColor : ballLabelColor;
+            // 이번 턴에 얻은 공은 이번 턴에는 안 나가니까 턴이 끝날 때까지 "+N"으로 따로 보여 줘.
             bool hasAcquired = acquired > 0;
             acquiredBadge.gameObject.SetActive(hasAcquired);
             if (hasAcquired)
@@ -206,6 +228,8 @@ namespace ElementalBreaker
             acquiredBadge.anchoredPosition = new Vector2(x, acquiredBadge.anchoredPosition.y);
             if (popAcquired)
                 Pop(acquiredBadge);
+            if (popCount)
+                Pop(ballLabel.rectTransform);
         }
 
         // [아이콘 글자] 두 항목을 gap을 두고 이어 붙이고, 묶음 전체를 가운데에 둬. 항목은 왼쪽 가운데 기준이야.

@@ -15,6 +15,16 @@ namespace ElementalBreaker
         private const float ArrivePopScale = 0.18f;
         private const float ArrivePopTime = 0.28f;
         private static readonly Color32 ReadyLabelColor = new Color32(0xFF, 0xE4, 0x8A, 0xFF);
+        // 폭탄이 취소되면 칸이 옆으로 흔들리고, 빛이 빨갛게 번쩍였다가 금색으로 돌아와.
+        private const float ShakeDistance = 6f;
+        private const float ShakeTime = 0.3f;
+        private const float DeniedFlashTime = 0.6f;
+        private static readonly Color DeniedGlowColor = new Color32(0xFF, 0x6B, 0x6B, 0xFF);
+        // 취소 알림은 살짝 올라오며 나타나서 잠깐 머물다 사라져.
+        private const float ToastRise = 8f;
+        private const float ToastInTime = 0.15f;
+        private const float ToastHoldTime = 1.3f;
+        private const float ToastOutTime = 0.3f;
 
         [SerializeField] private BrickBoard board;
         [SerializeField] private BallLauncher launcher;
@@ -27,21 +37,81 @@ namespace ElementalBreaker
         [SerializeField] private TMP_Text label;
         [Header("아이템 이미지 (폭탄은 속성별 아이콘을 코드에서 불러와)")]
         [SerializeField] private Sprite iceIcon;
+        [Header("폭탄 데미지 (아이템 칸 아래 테두리의 작은 알약)")]
+        [Tooltip("폭탄을 들고 있을 때만 보여. 가운데 십자 데미지야.")]
+        [SerializeField] private RectTransform damageBadge;
+        [SerializeField] private TMP_Text damageLabel;
+        [Header("폭탄 취소 알림 (아이템 칸 위 말풍선)")]
+        [Tooltip("맨 앞 공 주변에 벽돌이 없어 폭탄을 쓰지 않았을 때 잠깐 보여.")]
+        [SerializeField] private CanvasGroup cancelToast;
 
         private ItemType shownItem = (ItemType)(-1);
         private ElementType shownElement;
         private int shownUsable = -1;
+        private int shownDamage = -1;
+        private Color glowColor;
+        private Vector2 toastPosition;
+        private Tween glowFlash;
 
         private void Awake()
         {
             if (button != null)
                 button.onClick.AddListener(OnClick);
+            if (readyGlow != null)
+                glowColor = readyGlow.color;
+            if (cancelToast != null)
+            {
+                toastPosition = ((RectTransform)cancelToast.transform).anchoredPosition;
+                cancelToast.gameObject.SetActive(false);
+            }
         }
 
         private void OnClick()
         {
-            if (board != null)
-                GameAudio.Play(board.UseHeldItem() ? SoundCue.Click : SoundCue.Denied);
+            if (board == null)
+                return;
+            if (board.UseHeldItem())
+            {
+                GameAudio.Play(SoundCue.Click);
+                return;
+            }
+            GameAudio.Play(SoundCue.Denied);
+            // 폭탄은 맨 앞 공 주변에 벽돌이 없으면 쓰지 않고 칸에 남아. 왜 안 터졌는지 알려 줘.
+            if (board.Items.Held == ItemType.Bomb)
+                ShowCanceled();
+        }
+
+        private void ShowCanceled()
+        {
+            RectTransform slot = button.transform as RectTransform;
+            if (slot != null)
+            {
+                slot.DOKill(true);
+                slot.DOPunchAnchorPos(new Vector2(ShakeDistance, 0f), ShakeTime, 14, 0.6f).SetUpdate(true);
+            }
+            if (readyGlow != null && readyGlow.enabled)
+            {
+                // 깜빡이는 투명도는 그대로 두고 색만 빨강에서 금색으로 돌려.
+                glowFlash?.Kill();
+                glowFlash = DOVirtual.Float(0f, 1f, DeniedFlashTime, t =>
+                {
+                    Color color = Color.Lerp(DeniedGlowColor, glowColor, t);
+                    readyGlow.color = new Color(color.r, color.g, color.b, readyGlow.color.a);
+                }).SetEase(Ease.InCubic).SetUpdate(true);
+            }
+            if (cancelToast == null)
+                return;
+            RectTransform toast = (RectTransform)cancelToast.transform;
+            cancelToast.DOKill();
+            cancelToast.gameObject.SetActive(true);
+            cancelToast.alpha = 0f;
+            toast.anchoredPosition = toastPosition + new Vector2(0f, -ToastRise);
+            DOTween.Sequence().SetTarget(cancelToast).SetUpdate(true)
+                .Append(cancelToast.DOFade(1f, ToastInTime))
+                .Join(toast.DOAnchorPos(toastPosition, ToastInTime).SetEase(Ease.OutQuad))
+                .AppendInterval(ToastHoldTime)
+                .Append(cancelToast.DOFade(0f, ToastOutTime))
+                .OnComplete(() => cancelToast.gameObject.SetActive(false));
         }
 
         private void LateUpdate()
@@ -52,6 +122,7 @@ namespace ElementalBreaker
             ElementType element = launcher.TurnElement;
             // 폭탄은 공이 날아가는 중에만, 얼음은 조준 중에도 쓸 수 있어. 규칙은 보드가 정해.
             bool usable = board.CanUseHeldItem;
+            RefreshDamage(item);
             if (item == shownItem && element == shownElement && (usable ? 1 : 0) == shownUsable)
                 return;
             bool arrived = shownItem == ItemType.None && item != ItemType.None;
@@ -66,16 +137,37 @@ namespace ElementalBreaker
                 PopSlot();
         }
 
+        // 폭탄을 들고 있으면 이번 턴 십자 데미지를 보여 줘. 들고 있는 동안 턴이 지나 세지면 톡 튀어.
+        private void RefreshDamage(ItemType item)
+        {
+            if (damageBadge == null || damageLabel == null)
+                return;
+            int damage = item == ItemType.Bomb ? board.BombCrossDamage : 0;
+            if (damage == shownDamage)
+                return;
+            bool grew = shownDamage > 0 && damage > shownDamage;
+            shownDamage = damage;
+            damageBadge.gameObject.SetActive(damage > 0);
+            if (damage <= 0)
+                return;
+            damageLabel.SetText("{0}", damage);
+            if (grew)
+            {
+                damageBadge.DOKill(true);
+                damageBadge.DOPunchScale(new Vector3(ArrivePopScale, ArrivePopScale, 0f), ArrivePopTime, 6, 0.5f).SetUpdate(true);
+            }
+        }
+
         private void SetGlow(bool on)
         {
             if (readyGlow == null)
                 return;
             readyGlow.DOKill();
+            glowFlash?.Kill();
             readyGlow.enabled = on;
             if (!on)
                 return;
-            Color color = readyGlow.color;
-            readyGlow.color = new Color(color.r, color.g, color.b, 1f);
+            readyGlow.color = new Color(glowColor.r, glowColor.g, glowColor.b, 1f);
             readyGlow.DOFade(GlowMinAlpha, GlowPulseTime).SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo).SetUpdate(true);
         }
@@ -93,10 +185,19 @@ namespace ElementalBreaker
         {
             if (readyGlow != null)
                 readyGlow.DOKill();
+            glowFlash?.Kill();
             if (button != null)
                 button.transform.DOKill(true);
+            if (damageBadge != null)
+                damageBadge.DOKill(true);
+            if (cancelToast != null)
+            {
+                cancelToast.DOKill();
+                cancelToast.gameObject.SetActive(false);
+            }
             // 다시 켜지면 처음부터 맞춰 그려.
             shownUsable = -1;
+            shownDamage = -1;
         }
 
         private void Refresh(ItemType item, ElementType element, bool usable)

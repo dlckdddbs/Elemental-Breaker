@@ -65,6 +65,7 @@ namespace ElementalBreaker
         private float launchCountdown;
         private bool hasReturnPosition;
         private int acquiredBallCount;
+        private bool launchHalf;
         private bool needsTurnPreparation = true;
         public ElementType TurnElement { get; private set; }
         public ElementType? ReservedElement { get; private set; }
@@ -81,9 +82,16 @@ namespace ElementalBreaker
         public int PendingBallCount { get; private set; }
         public int FlyingBallCount => flyingBalls.Count;
         public int BallCount => balls.Count + acquiredBallCount;
-        // 이번 턴에 발사하는 공 수야. 이번 턴에 얻은 공은 다음 턴부터 합류해서 따로 세.
+        // 지금 가진 공 수야. 이번 턴에 얻은 공은 이번 턴에는 안 나가서 따로 세고, 턴이 끝나면 여기에 더해져.
         public int ActiveBallCount => balls.Count;
         public int AcquiredBallCount => acquiredBallCount;
+        // 이번 턴에 쏠 공 수야. "공 절반" 디버프 턴에는 절반(올림, 최소 1개)만 쏘고 나머지는 발사 자리에 남아.
+        public int LaunchCount => launchHalf ? (balls.Count + 1) / 2 : balls.Count;
+        // 이번 턴에 쏘지 않고 처음 발사 자리에서 쉬는 공 수와 그 자리야.
+        public int RestingBallCount => IsTurnActive ? balls.Count - LaunchCount : 0;
+        public Vector2 TurnLaunchPosition => turnLaunchPosition;
+
+        public void SetLaunchHalf(bool half) => launchHalf = half;
 
         // 맨 앞 공: 남아 있는 공 중 가장 앞에 있는 공. 앞의 공이 회수되거나 퇴장하면 다음 공이 맨 앞이 돼.
         public Ball FrontBall
@@ -147,7 +155,7 @@ namespace ElementalBreaker
 
         public void AddBall()
         {
-            // 현재 턴 발사 목록은 유지하고 다음 턴에 합류시켜.
+            // 현재 턴 발사 목록은 유지하고, 턴이 끝나는 순간 합류시켜.
             acquiredBallCount++;
         }
 
@@ -340,21 +348,15 @@ namespace ElementalBreaker
             if (!ready || IsTurnActive || IsInputBlocked)
                 return;
 
-            // 획득한 만큼만 풀을 늘리고 이후에는 계속 재사용해.
-            while (acquiredBallCount > 0)
-            {
-                Ball addedBall = CreateBall();
-                addedBall.PrepareTurn(launchPoint.position, TurnElement);
-                AddToPool(addedBall);
-                acquiredBallCount--;
-            }
+            // 보통은 턴 끝에 이미 합류했어. 혹시 남은 공이 있으면 여기서 마저 합류시켜.
+            MergeAcquiredBalls();
             IsTurnActive = true;
             hasReturnPosition = false;
             turnLaunchPosition = launchPoint.position;
             turnDirection = direction;
             nextBallIndex = 0;
             frontBallIndex = 0;
-            PendingBallCount = balls.Count;
+            PendingBallCount = LaunchCount;
             launchCountdown = 0f;
             AssignTrails();
             LaunchNextBall();
@@ -419,12 +421,26 @@ namespace ElementalBreaker
 
             IsTurnActive = false;
             CancelFastForward();
+            // 공이 다 돌아왔으니 이번 턴에 얻은 공을 실제로 더해. 상단 "공 ×N +M"이 바로 "공 ×(N+M)"이 돼.
+            MergeAcquiredBalls();
             needsTurnPreparation = true;
             CompletedTurnCount++;
             CancelAim();
             TurnEnded?.Invoke();
             if (!IsInputBlocked)
                 PrepareUpcomingTurn();
+        }
+
+        // 얻은 공만큼만 풀을 늘리고 이후에는 계속 재사용해. 다음 턴 속성은 PrepareUpcomingTurn이 모든 공에 다시 입혀.
+        private void MergeAcquiredBalls()
+        {
+            while (acquiredBallCount > 0)
+            {
+                Ball addedBall = CreateBall();
+                addedBall.PrepareTurn(launchPoint.position, TurnElement);
+                AddToPool(addedBall);
+                acquiredBallCount--;
+            }
         }
 
         private void FixedUpdate()

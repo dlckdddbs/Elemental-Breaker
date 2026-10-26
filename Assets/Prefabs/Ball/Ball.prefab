@@ -29,7 +29,7 @@ RectTransform:
   m_GameObject: {fileID: 2291687597840948043}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0}
+  m_LocalScale: {x: 0.4, y: 0.4, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -159,8 +159,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.003622055, y: 0}
-  m_Radius: 0.32251942
+  m_Offset: {x: 0.0045275688, y: 0}
+  m_Radius: 0.40314928
 --- !u!114 &2033542690642636208
 MonoBehaviour:
   m_ObjectHideFlags: 0

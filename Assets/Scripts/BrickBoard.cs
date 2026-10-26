@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace ElementalBreaker
@@ -38,6 +39,8 @@ namespace ElementalBreaker
         [SerializeField, Min(0f)] private float bombHitStopTime = 0.1f;
         [Tooltip("느려지는 동안의 게임 속도. 0이면 완전히 멈춰.")]
         [SerializeField, Range(0f, 1f)] private float bombHitStopScale = 0.05f;
+        [Header("턴 이벤트: 해금, 골드 보상, 디버프")]
+        [SerializeField] private TurnEventSettings eventSettings = new TurnEventSettings();
 
         private Brick[,] cells;
         private Stack<Brick> pool;
@@ -48,6 +51,13 @@ namespace ElementalBreaker
         private Vector2 cellSize;
         private Vector2 brickSize;
         private float descentElapsed;
+        // 두 칸 하강 디버프 턴에 한 번 더 내려와야 하는 횟수야.
+        private int extraDescents;
+        // 두 칸 하강 턴에는 한 칸씩 천천히 내려오고, 두 칸 사이에 잠깐 쉬어. 남은 쉬는 시간이 0 이상이면 쉬는 중이야.
+        private const float DoubleDescentDuration = 0.5f;
+        private const float DoubleDescentPause = 0.3f;
+        private bool slowDescent;
+        private float descentPause = -1f;
         private int lastProcessedTurn;
         private bool initialized;
 
@@ -57,6 +67,12 @@ namespace ElementalBreaker
         public int DescentCount { get; private set; }
         public BrickEffects Effects { get; private set; }
         public IceEffects Ice { get; private set; }
+        // 턴 보상과 디버프 일정, 이번 턴 규칙이야. 배너가 Awake에서 연출을 붙일 수 있게 처음 찾을 때 만들어.
+        public TurnEvents TurnEvents => turnEvents ??= new TurnEvents(this, launcher, eventSettings);
+        // 아이템 금지 디버프 턴이야. 아이템 칸, 공 속성, 상점을 모두 쓸 수 없어.
+        public bool ItemsBanned => TurnEvents.ItemsBanned;
+        // 벽돌 속성 변경 물결이야.
+        public ElementWave ElementWave { get; private set; }
         // 이번 턴에 얼음을 썼어. 턴이 끝나면 벽돌이 내려오지 않고 새 줄도 생기지 않아. 턴 수는 그대로 1 올라가.
         public bool IsFrozen { get; private set; }
         public GoldWallet Gold { get; } = new GoldWallet();
@@ -65,6 +81,7 @@ namespace ElementalBreaker
         public event Action GameOver;
 
         private BombItem bomb;
+        private TurnEvents turnEvents;
 
         private const int BreakGold = 1;
         private const int AdvantageBreakGold = 2;
@@ -120,8 +137,16 @@ namespace ElementalBreaker
             HitStop hitStop = Effects.gameObject.AddComponent<HitStop>();
             BombEffects bombEffects = new GameObject("Bomb Effects").AddComponent<BombEffects>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(bombEffects.gameObject, gameObject.scene);
-            bombEffects.Initialize(this, visual.sharedMaterial, visual.sortingLayerID, effectOrder);
+            bombEffects.Initialize(this, visual.sharedMaterial, brickTemplate.GetComponentInChildren<TMP_Text>(true),
+                visual.sortingLayerID, effectOrder);
             bomb = new BombItem(this, launcher, hitStop, bombEffects);
+            // 폭탄이 터질 맨 앞 공의 조준 고리야. 벽돌 숫자(+3) 위에 그려서 벽돌 사이에서도 보여.
+            BombTargetMarker bombTarget = new GameObject("Bomb Target").AddComponent<BombTargetMarker>();
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(bombTarget.gameObject, gameObject.scene);
+            bombTarget.Initialize(this, launcher, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder + 4);
+            ElementWave = new GameObject("Element Wave").AddComponent<ElementWave>();
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(ElementWave.gameObject, gameObject.scene);
+            ElementWave.Initialize(this, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
             Ice = new GameObject("Ice Effects").AddComponent<IceEffects>();
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(Ice.gameObject, gameObject.scene);
             Ice.Initialize(this, launcher, visual.sharedMaterial, visual.sortingLayerID, visual.sortingOrder);
@@ -141,10 +166,11 @@ namespace ElementalBreaker
                     pickupPool.Push(pickup);
                 }
             }
+            TurnNumber = TurnEvents.StartTurn;
+            TurnEvents.SkipTo(TurnNumber);
             initialized = true;
             lastProcessedTurn = launcher.CompletedTurnCount;
-            SpawnTopRow();
-            launcher.SetInputBlocked(false);
+            StartTurn(true);
         }
 
         public Brick GetBrick(int row, int column) => cells[row, column];
@@ -179,6 +205,19 @@ namespace ElementalBreaker
                         results.Add(cells[r, c]);
         }
 
+        // 이 자리에서 폭탄이 터지면 맞는 벽돌이 하나라도 있는지야. 맨 앞 공 조준 표시와 폭탄 취소에 써.
+        public bool HasBricksInBombRange(Vector2 position)
+        {
+            WorldToBombCell(position, out int row, out int column);
+            int rowMin = Mathf.Max(0, row - bombRadius), rowMax = Mathf.Min(rows - 1, row + bombRadius);
+            int columnMin = Mathf.Max(0, column - bombRadius), columnMax = Mathf.Min(columns - 1, column + bombRadius);
+            for (int r = rowMin; r <= rowMax; r++)
+                for (int c = columnMin; c <= columnMax; c++)
+                    if (cells[r, c] != null)
+                        return true;
+            return false;
+        }
+
         public int BombRadius => bombRadius;
         // 칸 하나의 월드 크기야. 폭발 크기를 범위 칸 수에 맞출 때 써.
         public Vector2 CellSize => cellSize;
@@ -187,10 +226,16 @@ namespace ElementalBreaker
         // 벽돌 칸 전체의 월드 사각형이야.
         public Rect BoardRect => new Rect(boardCenter - boardSize * 0.5f, boardSize);
 
-        // 상점의 "벽돌 속성 변경"이야. 보드에 있는 모든 벽돌을 target 속성으로 바꿔.
+        // 상점과 9턴 해금 보상의 "벽돌 속성 변경"이야. 보드에 있는 모든 벽돌을 target 속성으로 바꿔.
+        // 발사 자리에서 바뀔 속성 색 물결이 퍼지고, 물결이 지나가는 벽돌부터 바뀌어(ElementWave.Duration 동안).
         public void ChangeAllBrickElements(ElementType target)
         {
             GameAudio.Play(SoundCue.BoardChange);
+            if (ElementWave != null)
+            {
+                ElementWave.Play(launcher.LaunchPosition, target);
+                return;
+            }
             for (int r = 0; r < rows; r++)
                 for (int c = 0; c < columns; c++)
                     if (cells[r, c] != null)
@@ -199,14 +244,18 @@ namespace ElementalBreaker
 
         // 폭탄 기본 데미지 = 턴 ÷ divisor(올림). 최소 1이야.
         public int BombDamage(int divisor) => Mathf.Max(1, Mathf.CeilToInt(TurnNumber / (float)Mathf.Max(1, divisor)));
+        // 이번 턴 폭탄 데미지야. 대각선은 기본, 가운데 십자는 배율만큼 세. 유리한 상성 2배는 맞는 벽돌마다 달라서 빼.
+        public int BombBaseDamage => BombDamage(bombDamageDivisor);
+        public int BombCrossDamage => BombBaseDamage * bombCrossMultiplier;
 
         // 지금 아이템 칸의 아이템을 쓸 수 있는지야.
         // 폭탄은 공이 날아가는 중에만, 얼음은 조준 중(발사 전)이나 공이 날아가는 중에 한 턴에 한 번 쓸 수 있어.
+        // 아이템 금지 디버프 턴에는 둘 다 못 써.
         public bool CanUseHeldItem
         {
             get
             {
-                if (!initialized || IsGameOver || IsProcessing)
+                if (!initialized || IsGameOver || IsProcessing || ItemsBanned)
                     return false;
                 switch (Items.Held)
                 {
@@ -258,11 +307,22 @@ namespace ElementalBreaker
             launcher.SetInputBlocked(true);
             IsProcessing = true;
             // 얼음을 쓴 턴이면 내려오지 않아. 서리가 빛나고 가루로 풀리는 연출이 끝나면 다음 턴으로 넘어가.
+            // 두 칸 하강 디버프 턴이어도 얼음이 이겨서 안 내려와.
             if (IsFrozen)
             {
                 Ice.PlayRelease(FinishFrozenTurn);
                 return;
             }
+            // 두 칸 하강 디버프 턴이면 한 칸 내려온 뒤 새 줄을 하나 만들고 한 번 더 내려와. 턴 수는 1만 올라가.
+            extraDescents = TurnEvents.ActiveDebuff == Debuff.DoubleDescent ? 1 : 0;
+            slowDescent = extraDescents > 0;
+            StartDescent();
+        }
+
+        // 모든 벽돌과 아이템을 한 칸 아래 칸으로 옮기고, 화면 위치는 Update에서 descentDuration 동안 따라 내려가.
+        private void StartDescent()
+        {
+            IsProcessing = true;
             descentElapsed = 0f;
             DescentCount++;
             // 아래부터 옮겨서 같은 벽돌이 두 번 이동하지 않게 해.
@@ -280,14 +340,24 @@ namespace ElementalBreaker
                 if (pickup != null)
                     pickup.SetRow(row + 1);
             }
-            if (descentDuration <= 0f)
+            descentPause = -1f;
+            if (!slowDescent && descentDuration <= 0f)
                 AdvanceDescent(0f);
         }
 
         private void Update()
         {
-            if (IsProcessing && !IsFrozen)
-                AdvanceDescent(Time.deltaTime);
+            if (!IsProcessing || IsFrozen)
+                return;
+            // 두 칸 하강: 한 칸 내려온 뒤 잠깐 쉬었다가 두 번째 칸을 내려와.
+            if (descentPause >= 0f)
+            {
+                descentPause -= Time.deltaTime;
+                if (descentPause < 0f)
+                    StartDescent();
+                return;
+            }
+            AdvanceDescent(Time.deltaTime);
         }
 
         // 얼음 턴의 끝이야. 벽돌은 그 자리에 있고 새 줄도 없이, 턴 수만 올리고 다음 턴을 열어.
@@ -298,13 +368,33 @@ namespace ElementalBreaker
             IsFrozen = false;
             IsProcessing = false;
             TurnNumber++;
-            launcher.SetInputBlocked(false);
+            StartTurn(false);
+        }
+
+        // 새 턴이 시작될 때야. 이번 턴 규칙(디버프)을 먼저 켜고 새 줄을 만든 뒤, 턴 이벤트를 보여 주고 나서 조작을 열어.
+        // 이벤트를 보여 주는 동안은 조작이 막혀 있어서 상점과 공 속성도 못 눌러.
+        private void StartTurn(bool spawnRow)
+        {
+            TurnEvents.Prepare(TurnNumber);
+            if (spawnRow)
+                SpawnTopRow();
+            TurnEvents.Play(OpenTurn);
+        }
+
+        private void OpenTurn()
+        {
+            if (!IsGameOver)
+                launcher.SetInputBlocked(false);
         }
 
         private void AdvanceDescent(float deltaTime)
         {
             descentElapsed += deltaTime;
-            float progress = descentDuration <= 0f ? 1f : Mathf.Clamp01(descentElapsed / descentDuration);
+            // 두 칸 하강 턴에는 한 칸씩 천천히 내려오고 내려앉을 때 살짝 느려져. 평소에는 일정한 속도야.
+            float duration = slowDescent ? DoubleDescentDuration : descentDuration;
+            float progress = duration <= 0f ? 1f : Mathf.Clamp01(descentElapsed / duration);
+            if (slowDescent)
+                progress = EffectMath.EaseOut(progress);
             for (int row = 1; row < rows; row++)
             for (int column = 0; column < columns; column++)
             {
@@ -337,9 +427,17 @@ namespace ElementalBreaker
                 GameOver?.Invoke();
                 return;
             }
+            if (extraDescents > 0)
+            {
+                extraDescents--;
+                SpawnTopRow();
+                IsProcessing = true;
+                descentPause = DoubleDescentPause;
+                return;
+            }
+            slowDescent = false;
             TurnNumber++;
-            SpawnTopRow();
-            launcher.SetInputBlocked(false);
+            StartTurn(true);
         }
 
         private void SpawnTopRow()
@@ -347,7 +445,12 @@ namespace ElementalBreaker
             for (int i = 0; i < columns; i++)
                 columnOrder[i] = i;
             int spawned = 0;
-            int health = (int)Math.Min(int.MaxValue, (long)baseHealth + (long)(TurnNumber - 1) * healthPerTurn);
+            long baseRowHealth = (long)baseHealth + (long)(TurnNumber - 1) * healthPerTurn;
+            // 체력 2배 디버프는 그 뒤 처음 생기는 줄에 한 번 들어가. 그 벽돌들은 깨질 때까지 붉은 테두리가 남아.
+            bool boosted = TurnEvents.TakeDoubleHealth();
+            if (boosted)
+                baseRowHealth *= 2;
+            int health = (int)Math.Min(int.MaxValue, baseRowHealth);
             // 열 순서를 섞어서 왼쪽에만 몰리지 않게 해.
             for (int i = 0; i < columns && spawned < maxBricksPerRow; i++)
             {
@@ -360,9 +463,25 @@ namespace ElementalBreaker
                 Brick brick = pool.Pop();
                 cells[0, column] = brick;
                 brick.Spawn(this, 0, column, health, brickSize, ElementRules.RandomElement());
+                if (boosted)
+                    brick.SetBoosted(true);
                 spawned++;
             }
             SpawnPickups();
+            // 체력 2배 턴에는 경고 배너가 사라질 때 "×2"를 보여 줘. 얼음 때문에 다음 턴으로 미뤄진 줄은 생기자마자 보여 줘.
+            if (boosted && TurnEvents.ActiveDebuff != Debuff.DoubleHealth)
+                RevealBoostedRow();
+        }
+
+        // 맨 윗줄의 체력 2배 벽돌이 번쩍이고 "×2"가 떠.
+        public void RevealBoostedRow()
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                Brick brick = cells[0, column];
+                if (brick != null && brick.IsBoosted)
+                    brick.PlayBoostPop();
+            }
         }
 
         private void SpawnPickups()

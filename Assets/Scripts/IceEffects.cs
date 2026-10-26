@@ -57,6 +57,8 @@ namespace ElementalBreaker
         private const float FrameGlowAlpha = 0.7f;
         private const float FrameBand = 0.12f;
         private const float FrameStarSize = 0.22f;
+        // 테두리 굵기 배율이야. 테두리 이미지(가장자리 100px = 0.5월드)를 이만큼 줄여 그려서 액자처럼 두꺼워 보이지 않게 해.
+        private const float FrameScale = 0.7f;
         private const float FrameStarInset = 0.05f;
 
         // ---- 턴 끝 ----
@@ -608,7 +610,9 @@ namespace ElementalBreaker
             renderer.sprite = sprite;
             renderer.drawMode = SpriteDrawMode.Tiled;
             renderer.tileMode = SpriteTileMode.Continuous;
-            renderer.size = frameRect.size;
+            // 줄여 그린 만큼 크기를 키워서 바깥 끝은 그대로 화면 끝과 위쪽 벽, 회수선에 맞아.
+            renderer.size = frameRect.size / FrameScale;
+            renderer.transform.localScale = new Vector3(FrameScale, FrameScale, 1f);
             renderer.transform.position = new Vector3(frameRect.center.x, frameRect.center.y, 0f);
             if (material != null)
                 material.SetVector(RectId, new Vector4(frameRect.xMin, frameRect.yMin, frameRect.xMax, frameRect.yMax));

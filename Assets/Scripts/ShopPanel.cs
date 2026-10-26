@@ -20,12 +20,18 @@ namespace ElementalBreaker
             public Image iconBody;
             public Image iconOverlay;
             public Image iconBadge;
+            [Tooltip("새로 열린 카드에 붙는 NEW 표시야.")]
+            public GameObject newTag;
+            [Tooltip("아직 안 열린 카드의 아이콘 위 자물쇠야.")]
+            public GameObject lockBadge;
         }
 
         private static readonly Color32 PriceColor = new Color32(0xFF, 0xE4, 0x8A, 0xFF);
         private static readonly Color32 ReasonColor = new Color32(0xFF, 0x9A, 0x8A, 0xFF);
         private static readonly Color32 DescColor = new Color32(0xFF, 0xFF, 0xFF, 0xB4);
         private const float DisabledAlpha = 0.45f;
+        // 발사 중에는 상점 칸을 이만큼 흐리게 해. 공 속성 버튼과 같은 값이야.
+        private const float ButtonDisabledAlpha = 0.4f;
         // 열 때 목록이 상점 버튼 쪽에서 커지며 나타나고, 카드가 아래부터 차례로 올라와.
         private const float OpenScale = 0.8f;
         private const float OpenTime = 0.2f;
@@ -43,9 +49,12 @@ namespace ElementalBreaker
         [Tooltip("같은 판에서 같은 아이템을 살 때마다 오르는 가격. 0이면 안 올라.")]
         [SerializeField, Min(0)] private int priceStep = 0;
         [Header("상점 버튼")]
+        [Tooltip("버튼과 라벨을 묶은 칸이야. 발사 중에는 칸째 흐리게 해.")]
+        [SerializeField] private CanvasGroup shopGroup;
         [SerializeField] private Button shopButton;
-        [SerializeField] private Image shopFace;
         [SerializeField] private TMP_Text shopLabel;
+        [Tooltip("새로 열린 아이템이 있으면 상점 버튼에 붙는 NEW 표시야. 상점을 열면 숨어.")]
+        [SerializeField] private GameObject shopNewBadge;
         [Header("목록")]
         [SerializeField] private GameObject list;
         [SerializeField] private Button dimOverlay;
@@ -61,7 +70,10 @@ namespace ElementalBreaker
         private int shownGold = -1;
         private ItemType shownItem;
         private int shownTurn = -1;
-        private Color shopFaceColor;
+        // 상점 아이템이 열렸는지(마지막으로 확인한 값)와, 열린 뒤 아직 상점에서 못 본 아이템이야. ShopItem 순서야.
+        private readonly bool[] knownUnlocked = new bool[3];
+        private readonly bool[] isNew = new bool[3];
+        private bool unlocksSynced;
         // 아래 카드부터 올라오게 아래→위 순서로 담아.
         private readonly RectTransform[] cardRects = new RectTransform[3];
         private readonly Vector2[] cardPositions = new Vector2[3];
@@ -72,10 +84,12 @@ namespace ElementalBreaker
         private int IcePrice => icePrice + iceBought * priceStep;
         private int BrickChangePrice => brickChangePrice + brickChangeBought * priceStep;
 
+        // 지금 가격이야. 해금으로 받을 아이템을 칸이 차서 못 받으면 이만큼 골드로 대신 줘.
+        public int PriceOf(ShopItem item) =>
+            item == ShopItem.Bomb ? BombPrice : item == ShopItem.Ice ? IcePrice : BrickChangePrice;
+
         private void Awake()
         {
-            if (shopFace != null)
-                shopFaceColor = shopFace.color;
             CacheCard(0, brickChangeCard);
             CacheCard(1, iceCard);
             CacheCard(2, bombCard);
@@ -148,6 +162,9 @@ namespace ElementalBreaker
 
         private void CloseSilently()
         {
+            // 한 번 열어서 본 아이템은 NEW를 떼.
+            if (IsOpen)
+                Array.Clear(isNew, 0, isNew.Length);
             // 닫기는 바로 해. 남은 연출은 끝 상태로 맞춰서 다음에 열 때 자리가 어긋나지 않게 해.
             if (list != null)
                 list.transform.DOKill(true);
@@ -161,13 +178,13 @@ namespace ElementalBreaker
             dirty = true;
         }
 
-        private void BuyBomb() => BuyStored(ItemType.Bomb, BombPrice, ref bombBought);
+        private void BuyBomb() => BuyStored(ShopItem.Bomb, ItemType.Bomb, BombPrice, ref bombBought);
 
-        private void BuyIce() => BuyStored(ItemType.Ice, IcePrice, ref iceBought);
+        private void BuyIce() => BuyStored(ShopItem.Ice, ItemType.Ice, IcePrice, ref iceBought);
 
-        private void BuyStored(ItemType item, int price, ref int bought)
+        private void BuyStored(ShopItem shopItem, ItemType item, int price, ref int bought)
         {
-            if (!CanShop() || !board.Items.IsEmpty || !board.Gold.TrySpend(price))
+            if (!CanShop() || !IsUnlocked(shopItem) || !board.Items.IsEmpty || !board.Gold.TrySpend(price))
             {
                 GameAudio.Play(SoundCue.Denied);
                 return;
@@ -181,8 +198,8 @@ namespace ElementalBreaker
         private void BuyBrickChange()
         {
             ElementType element = launcher.TurnElement;
-            if (!CanShop() || element == ElementType.Normal || brickChangeUsedTurn == board.TurnNumber ||
-                !board.Gold.TrySpend(BrickChangePrice))
+            if (!CanShop() || !IsUnlocked(ShopItem.BrickChange) || element == ElementType.Normal ||
+                brickChangeUsedTurn == board.TurnNumber || !board.Gold.TrySpend(BrickChangePrice))
             {
                 GameAudio.Play(SoundCue.Denied);
                 return;
@@ -194,20 +211,30 @@ namespace ElementalBreaker
             CloseSilently();
         }
 
-        private bool CanShop() => board != null && launcher != null && launcher.CanPrepare && !board.IsGameOver;
+        // 발사 전에만 열려. 아이템 금지 디버프 턴에는 상점도 못 써.
+        private bool CanShop() => board != null && launcher != null && launcher.CanPrepare && !board.IsGameOver && !board.ItemsBanned;
+
+        private bool IsUnlocked(ShopItem item) => board.TurnEvents.IsUnlocked(item);
+
+        // 아직 안 열린 아이템은 잠긴 카드로 보여 줘.
+        private string LockedReason(ShopItem item) =>
+            IsUnlocked(item) ? null : board.TurnEvents.UnlockTurn(item) + "턴에 열려요";
 
         private void LateUpdate()
         {
             if (board == null || launcher == null)
                 return;
+            SyncUnlocks();
             bool canShop = CanShop();
             if ((canShop ? 1 : 0) != shownCanPrepare)
             {
                 shownCanPrepare = canShop ? 1 : 0;
                 if (!canShop)
                     Close();
+                // 발사 중에는 공 속성 칸처럼 버튼과 라벨을 칸째 흐리게 해서 누를 수 없는 걸 보여 줘.
                 shopButton.interactable = canShop;
-                shopFace.color = canShop ? shopFaceColor : new Color(shopFaceColor.r, shopFaceColor.g, shopFaceColor.b, 0.4f);
+                if (shopGroup != null)
+                    shopGroup.alpha = canShop ? 1f : ButtonDisabledAlpha;
                 dirty = true;
             }
             if (shownElement != launcher.TurnElement || shownGold != board.Gold.Amount ||
@@ -221,13 +248,46 @@ namespace ElementalBreaker
             shownItem = board.Items.Held;
             shownTurn = board.TurnNumber;
             if (shopLabel != null)
-                shopLabel.SetText(!canShop ? "발사 중" : IsOpen ? "닫기" : "상점");
+                shopLabel.SetText(IsOpen ? "닫기" : "상점");
             if (IsOpen)
                 RefreshCards();
         }
 
+        // 새로 열린 아이템에 NEW를 붙여. 상점 버튼의 NEW는 상점을 열면 숨고, 카드의 NEW는 상점을 한 번 닫으면 사라져.
+        private void SyncUnlocks()
+        {
+            bool anyNew = false;
+            for (int i = 0; i < isNew.Length; i++)
+            {
+                bool open = IsUnlocked((ShopItem)i);
+                if (open && !knownUnlocked[i])
+                {
+                    // 처음 확인할 때(테스트용 시작 턴이라 이미 열려 있던 것)는 NEW를 붙이지 않아.
+                    isNew[i] = unlocksSynced;
+                    dirty = true;
+                }
+                knownUnlocked[i] = open;
+                anyNew |= isNew[i];
+            }
+            unlocksSynced = true;
+            bool showBadge = anyNew && !IsOpen;
+            if (shopNewBadge != null && shopNewBadge.activeSelf != showBadge)
+                shopNewBadge.SetActive(showBadge);
+        }
+
+        private void RefreshMarks(Card card, ShopItem item)
+        {
+            if (card.newTag != null)
+                card.newTag.SetActive(isNew[(int)item]);
+            if (card.lockBadge != null)
+                card.lockBadge.SetActive(!IsUnlocked(item));
+        }
+
         private void RefreshCards()
         {
+            RefreshMarks(bombCard, ShopItem.Bomb);
+            RefreshMarks(iceCard, ShopItem.Ice);
+            RefreshMarks(brickChangeCard, ShopItem.BrickChange);
             ElementType element = launcher.TurnElement;
             int gold = board.Gold.Amount;
             bool slotFull = !board.Items.IsEmpty;
@@ -237,9 +297,10 @@ namespace ElementalBreaker
             bombCard.iconBody.color = Color.white;
             if (bombCard.iconOverlay != null)
                 bombCard.iconOverlay.enabled = false;
-            SetCard(bombCard, BombPrice, slotFull ? "아이템 칸이 차 있어요" : gold < BombPrice ? "골드가 부족해요" : null,
-                "3x3 폭발, 십자 2배");
-            SetCard(iceCard, IcePrice, slotFull ? "아이템 칸이 차 있어요" : gold < IcePrice ? "골드가 부족해요" : null,
+            // 이번 턴 실제 데미지를 보여 줘. 턴이 지날수록 세져.
+            SetCard(bombCard, BombPrice, LockedReason(ShopItem.Bomb) ?? (slotFull ? "아이템 칸이 차 있어요" : gold < BombPrice ? "골드가 부족해요" : null),
+                "3x3 · 십자 " + board.BombCrossDamage + " / 대각 " + board.BombBaseDamage);
+            SetCard(iceCard, IcePrice, LockedReason(ShopItem.Ice) ?? (slotFull ? "아이템 칸이 차 있어요" : gold < IcePrice ? "골드가 부족해요" : null),
                 "이번 턴 벽돌이 안 내려옴");
 
             // 벽돌 속성 변경: 지금 공에 약한 벽돌 그림을 보여 줘. 일반 공이면 쓸 수 없어.
@@ -251,9 +312,9 @@ namespace ElementalBreaker
                 if (target != ElementType.Normal)
                     brickChangeCard.iconBadge.sprite = ElementRules.GetIconSprite(target);
             }
-            string reason = element == ElementType.Normal ? "먼저 공 속성을 골라 주세요"
+            string reason = LockedReason(ShopItem.BrickChange) ?? (element == ElementType.Normal ? "먼저 공 속성을 골라 주세요"
                 : brickChangeUsedTurn == board.TurnNumber ? "이번 턴에 이미 썼어요"
-                : gold < BrickChangePrice ? "골드가 부족해요" : null;
+                : gold < BrickChangePrice ? "골드가 부족해요" : null);
             SetCard(brickChangeCard, BrickChangePrice, reason, "모든 벽돌을 " + ElementName(target) + " 속성으로");
         }
 

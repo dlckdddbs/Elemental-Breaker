@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace ElementalBreaker
@@ -123,6 +124,7 @@ namespace ElementalBreaker
         }
 
         private BrickBoard board;
+        private BombTotalPopup totalPopup;
         private Material additive;
         private bool ownsAdditive;
         private SpriteRenderer glowMain, glowLight, blast, ring, screenFlash;
@@ -146,7 +148,8 @@ namespace ElementalBreaker
         private float nominalSize = 1f, blastScale = 1f;
         private Color lightColor, mainColor, ringColor;
 
-        public void Initialize(BrickBoard owner, Material material, int sortingLayerId, int baseOrder)
+        // labelStyle은 벽돌 숫자야. 데미지 합계 숫자가 같은 글꼴을 써.
+        public void Initialize(BrickBoard owner, Material material, TMP_Text labelStyle, int sortingLayerId, int baseOrder)
         {
             board = owner;
             // 빛은 더하기 합성으로 그려서 어두운 배경에서 빛나 보여. 셰이더가 없으면 일반 재질로 대신해.
@@ -181,6 +184,10 @@ namespace ElementalBreaker
                 partRenderers[i] = CreateRenderer("Bomb Particle", material, sortingLayerId, baseOrder + 6);
             screenFlash = CreateRenderer("Bomb Screen Flash", material, sortingLayerId, baseOrder + 10);
             screenFlash.sprite = glow;
+            // 데미지 합계 숫자(+11~+12)는 폭발 연출 전부보다 위에 그려.
+            totalPopup = new GameObject("Bomb Total").AddComponent<BombTotalPopup>();
+            totalPopup.transform.SetParent(transform, false);
+            totalPopup.Initialize(owner, material, labelStyle, sortingLayerId, baseOrder + 11);
 
             for (int e = 0; e < PartStyles.Length; e++)
             {
@@ -232,9 +239,11 @@ namespace ElementalBreaker
 
         // center는 누른 순간 맨 앞 공의 자리야. 폭발은 그 자리에서 터지고 끝까지 움직이지 않아.
         // impactDuration은 히트 스톱 시간이고, 그동안 멈춘 장면을 보여 준 뒤 터져.
-        public void PlayDetonate(Vector2 center, ElementType element, float impactDuration)
+        // totalDamage는 벽돌에서 실제로 깎인 체력의 합이고, 터진 뒤 폭발 위에 숫자로 떠.
+        public void PlayDetonate(Vector2 center, ElementType element, float impactDuration, int totalDamage)
         {
             HideAll();
+            totalPopup.Play(center, element, totalDamage, Mathf.Max(0f, impactDuration));
             detonateTime = Time.unscaledTime;
             impactTime = Mathf.Max(0f, impactDuration);
             released = false;

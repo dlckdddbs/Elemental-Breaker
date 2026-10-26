@@ -57,3 +57,5 @@ MonoBehaviour:
     volume: 0.6
   - clip: {fileID: 0}
     volume: 0.6
+  - clip: {fileID: 0}
+    volume: 0.6

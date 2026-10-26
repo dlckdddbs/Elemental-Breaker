@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -14,6 +15,20 @@ namespace ElementalBreaker
 
         private const string IconName = "Element Icon";
         private const string FrostName = "Frost Film";
+        private const string BoostRimName = "Boost Rim";
+        private const string BoostLabelName = "Boost Label";
+        // 체력 2배 벽돌은 깨질 때까지 붉은 테두리가 남아. 벽돌보다 이만큼 크게 뒤에 깔아서 가장자리만 보여.
+        private const float BoostRimPadding = 0.035f;
+        private static readonly Color BoostRimColor = new Color32(0xFF, 0x3B, 0x4E, 0xFF);
+        // 체력 2배 줄이 처음 보일 때 벽돌이 번쩍이고, 위에 "×2"가 톡 커지며 떠올랐다가 사라져.
+        private const float BoostFlash = 0.6f;
+        private const float BoostPopTime = 0.9f;
+        private const float BoostPopRise = 0.18f;
+        private const float BoostLabelSize = 2.6f;
+        private static readonly Color BoostTextColor = new Color32(0xFF, 0x8A, 0x78, 0xFF);
+        private static readonly Color BoostOutlineColor = new Color32(0x3A, 0x0A, 0x12, 0xFF);
+        // "×2" 글자 재질은 모든 벽돌이 같이 써.
+        private static Material boostLabelMaterial;
         private static readonly int FrostProgressId = Shader.PropertyToID("_Progress");
         private static readonly int FrostGlowId = Shader.PropertyToID("_Glow");
         private static readonly int FrostSheenId = Shader.PropertyToID("_Sheen");
@@ -58,6 +73,9 @@ namespace ElementalBreaker
         public int Health { get; private set; }
         public ElementType Element { get; private set; }
         public bool IsFrozen => frost != null && frost.enabled;
+        public bool IsBoosted => boostRim != null && boostRim.enabled;
+        private SpriteRenderer boostRim;
+        private TextMeshPro boostLabel;
         // 보이는 벽돌 크기(월드)야.
         public Vector2 Size => baseSize;
 
@@ -140,6 +158,78 @@ namespace ElementalBreaker
                 frost.enabled = false;
         }
 
+        // 체력 2배 디버프로 생긴 벽돌이야. 붉은 테두리를 켜고 끄고, 풀에서 다시 나올 때는 꺼.
+        public void SetBoosted(bool boosted)
+        {
+            if (!boosted)
+            {
+                if (boostRim != null)
+                    boostRim.enabled = false;
+                if (boostLabel != null)
+                {
+                    DOTween.Kill(boostLabel);
+                    boostLabel.gameObject.SetActive(false);
+                }
+                return;
+            }
+            if (boostRim == null)
+            {
+                boostRim = new GameObject(BoostRimName).AddComponent<SpriteRenderer>();
+                boostRim.transform.SetParent(transform, false);
+                boostRim.sharedMaterial = visual.sharedMaterial;
+                boostRim.sortingLayerID = visual.sortingLayerID;
+                boostRim.sortingOrder = visual.sortingOrder - 1;
+                boostRim.drawMode = SpriteDrawMode.Sliced;
+                boostRim.color = BoostRimColor;
+            }
+            boostRim.sprite = visual.sprite;
+            boostRim.size = baseSize + Vector2.one * (BoostRimPadding * 2f);
+            boostRim.enabled = true;
+        }
+
+        // 체력 2배 줄이 처음 보일 때야. 실제 시간으로 움직여.
+        public void PlayBoostPop()
+        {
+            if (destroyed || healthLabel == null)
+                return;
+            hitTime = 0f;
+            hitFlash = BoostFlash;
+            if (boostLabel == null)
+            {
+                boostLabel = new GameObject(BoostLabelName, typeof(RectTransform)).AddComponent<TextMeshPro>();
+                boostLabel.transform.SetParent(transform, false);
+                boostLabel.rectTransform.sizeDelta = new Vector2(1f, 0.5f);
+                boostLabel.font = healthLabel.font;
+                if (boostLabelMaterial == null)
+                {
+                    boostLabelMaterial = new Material(healthLabel.fontSharedMaterial);
+                    boostLabelMaterial.SetColor(ShaderUtilities.ID_OutlineColor, BoostOutlineColor);
+                }
+                boostLabel.fontSharedMaterial = boostLabelMaterial;
+                boostLabel.fontSize = BoostLabelSize;
+                boostLabel.alignment = TextAlignmentOptions.Center;
+                boostLabel.color = BoostTextColor;
+                boostLabel.text = "×2";
+                if (boostLabel.TryGetComponent(out Renderer labelRenderer))
+                {
+                    labelRenderer.sortingLayerID = visual.sortingLayerID;
+                    labelRenderer.sortingOrder = visual.sortingOrder + 5;
+                }
+            }
+            DOTween.Kill(boostLabel);
+            Transform label = boostLabel.transform;
+            Vector3 start = new Vector3(baseSize.x * 0.25f, baseSize.y * 0.5f + 0.1f, 0f);
+            label.localPosition = start;
+            label.localScale = Vector3.one * 0.4f;
+            boostLabel.alpha = 1f;
+            boostLabel.gameObject.SetActive(true);
+            DOTween.Sequence().SetTarget(boostLabel).SetUpdate(true)
+                .Append(label.DOScale(1f, 0.2f).SetEase(Ease.OutBack))
+                .Join(label.DOLocalMoveY(start.y + BoostPopRise, BoostPopTime).SetEase(Ease.OutQuad))
+                .Insert(BoostPopTime * 0.6f, DOTween.To(() => boostLabel.alpha, a => boostLabel.alpha = a, 0f, BoostPopTime * 0.4f))
+                .OnComplete(() => boostLabel.gameObject.SetActive(false));
+        }
+
         public void Spawn(BrickBoard owner, int row, int column, int health, Vector2 size,
             ElementType element = ElementType.Normal)
         {
@@ -152,6 +242,7 @@ namespace ElementalBreaker
             destroyed = false;
             EnsureIcon();
             HideFrost();
+            SetBoosted(false);
 
             // 스케일 대신 9-slice로 늘려서 모서리와 아이콘, 숫자가 찌그러지지 않게 해.
             Sprite baseSprite = ElementRules.GetBrickSprite();
@@ -194,7 +285,8 @@ namespace ElementalBreaker
         }
 
         // 상점의 "벽돌 속성 변경"으로 속성이 바뀔 때야. 한 번 번쩍여서 바뀐 걸 보여 줘.
-        public void SetElement(ElementType element)
+        // flash는 바뀌는 순간 흰색으로 섞이는 비율이야. 속성 물결은 공에 맞을 때보다 밝게 번쩍여.
+        public void SetElement(ElementType element, float flash = HitFlash)
         {
             if (destroyed || element == Element)
                 return;
@@ -202,7 +294,7 @@ namespace ElementalBreaker
             baseColor = ElementRules.GetBrickTint(element);
             RefreshIcon();
             hitTime = 0f;
-            hitFlash = HitFlash;
+            hitFlash = flash;
         }
 
         public void SetRow(int row) => Row = row;

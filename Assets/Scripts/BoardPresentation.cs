@@ -25,7 +25,9 @@ namespace ElementalBreaker
         [SerializeField] private SpriteRenderer topBoundaryLine;
         [SerializeField, Min(0.5f)] private float topLinePixels = 1f;
 
-        // 공이 다니는 영역의 위아래 끝이야. 위는 위쪽 벽 안쪽 면, 아래는 회수선이야. 얼음 테두리를 여기에 맞춰.
+        public Camera View => view;
+
+        // 공이 다니는 영역의 위아래 끝이야. 위는 위쪽 벽 안쪽 면, 아래는 회수선이야. 얼음 테두리와 상단·하단 띠를 여기에 맞춰.
         public bool TryGetPlayBounds(out float top, out float bottom)
         {
             top = topWall != null ? topWall.bounds.min.y : 0f;

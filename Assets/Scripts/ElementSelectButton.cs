@@ -61,7 +61,7 @@ namespace ElementalBreaker
                 Close();
                 return;
             }
-            if (launcher == null || !launcher.CanPrepare)
+            if (launcher == null || !launcher.CanPrepare || board.ItemsBanned)
                 return;
             if (shop != null)
                 shop.Close();
@@ -89,7 +89,7 @@ namespace ElementalBreaker
 
         private void Choose(ElementType element)
         {
-            if (launcher == null || board == null || !launcher.CanPrepare)
+            if (launcher == null || board == null || !launcher.CanPrepare || board.ItemsBanned)
             {
                 Close();
                 return;
@@ -111,7 +111,8 @@ namespace ElementalBreaker
         {
             if (launcher == null || board == null)
                 return;
-            bool canPrepare = launcher.CanPrepare && !board.IsGameOver;
+            // 아이템 금지 디버프 턴에는 공 속성도 못 바꿔.
+            bool canPrepare = launcher.CanPrepare && !board.IsGameOver && !board.ItemsBanned;
             if ((canPrepare ? 1 : 0) != shownCanPrepare)
             {
                 shownCanPrepare = canPrepare ? 1 : 0;
