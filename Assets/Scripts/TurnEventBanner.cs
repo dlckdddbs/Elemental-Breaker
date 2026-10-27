@@ -2,6 +2,7 @@ using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace ElementalBreaker
@@ -13,6 +14,7 @@ namespace ElementalBreaker
     // - 골드 보상: 해금보다 작은 배너로 보여 주고, 동전이 골드로 날아가.
     // - 디버프: 붉은 경고 배너("N턴 주의!")가 흔들리며 나타나고 화면 가장자리가 붉게 번쩍여.
     //   배너가 사라지면 그 턴 내내 상단 왼쪽에 빨간 표시가 남아. 두 칸 하강 턴에 얼음을 쓰면 표시가 회색으로 흐려져.
+    //   디버프가 4턴마다 나와서 경고 배너는 짧게 머물고, 화면을 누르면 바로 사라지기 시작해.
     // 빛줄기는 큰 보상 배너가 나타나는 순간에만 아주 흐리게 잠깐 보여. 연출은 모두 실제 시간으로 움직여.
     public sealed class TurnEventBanner : MonoBehaviour
     {
@@ -27,6 +29,8 @@ namespace ElementalBreaker
         private const float EnterTime = 0.3f;
         private const float FadeInTime = 0.15f;
         private const float HoldTime = 1f;
+        // 경고 배너는 자주 나와서 보상보다 짧게 머물러.
+        private const float WarningHoldTime = 0.5f;
         private const float ExitTime = 0.25f;
         private const float ExitScale = 0.96f;
         private const float RaysAlpha = 0.06f;
@@ -108,7 +112,7 @@ namespace ElementalBreaker
         [SerializeField] private GameObject alert;
         [Tooltip("화면 가장자리가 붉게 번쩍이는 그림이야.")]
         [SerializeField] private Image vignette;
-        [Tooltip("체력 2배, 아이템 금지, 두 칸 하강, 공 절반 순서야.")]
+        [Tooltip("체력 디버프, 아이템 금지, 두 칸 하강, 공 절반 순서야.")]
         [SerializeField] private Sprite[] debuffIcons = new Sprite[4];
         [Header("디버프 표시 (상단 왼쪽, 그 턴 내내)")]
         [SerializeField] private RectTransform chip;
@@ -138,6 +142,9 @@ namespace ElementalBreaker
         private Debuff chipDebuff = Debuff.None;
         private bool chipOff;
         private int shownResting = -1;
+        // 경고 배너가 나타나 머무는 중이라 눌러서 건너뛸 수 있어. 사라지는 중에는 끝까지 보여 줘.
+        private Sequence enterSequence;
+        private bool skippable;
 
         private void Awake()
         {
@@ -252,11 +259,11 @@ namespace ElementalBreaker
         private static string ItemName(ShopItem item) =>
             item == ShopItem.Bomb ? "속성 폭탄" : item == ShopItem.Ice ? "얼음" : "벽돌 속성 변경";
 
-        private static string DebuffLine(Debuff debuff)
+        private string DebuffLine(Debuff debuff)
         {
             switch (debuff)
             {
-                case Debuff.DoubleHealth: return "벽돌 체력 2배!";
+                case Debuff.HealthBoost: return "벽돌 체력 " + board.TurnEvents.HealthBoostText + "배!";
                 case Debuff.NoItems: return "아이템 사용 금지!";
                 case Debuff.DoubleDescent: return "벽돌 두 칸 하강!";
                 default: return "공 절반만 발사!";
@@ -267,18 +274,18 @@ namespace ElementalBreaker
         {
             switch (debuff)
             {
-                case Debuff.DoubleHealth: return "새로 나오는 줄의 체력 ×2";
+                case Debuff.HealthBoost: return "새로 나오는 줄의 체력 ×" + board.TurnEvents.HealthBoostText;
                 case Debuff.NoItems: return "아이템 · 공 속성 · 상점";
                 case Debuff.DoubleDescent: return "얼음으로 막을 수 있어요";
                 default: return "이번 턴만 " + launcher.ActiveBallCount + "개 → " + launcher.LaunchCount + "개";
             }
         }
 
-        private static string ChipText(Debuff debuff)
+        private string ChipText(Debuff debuff)
         {
             switch (debuff)
             {
-                case Debuff.DoubleHealth: return "체력 2배";
+                case Debuff.HealthBoost: return "체력 " + board.TurnEvents.HealthBoostText + "배";
                 case Debuff.NoItems: return "아이템 금지";
                 case Debuff.DoubleDescent: return "두 칸 하강";
                 default: return "공 절반";
@@ -329,11 +336,40 @@ namespace ElementalBreaker
                 enter.Insert(SparkleDelay, sparkle.DOScale(1f, SparkleInTime).SetEase(Ease.OutBack));
                 enter.Insert(SparkleDelay + SparkleInTime, sparkle.DOScale(0f, SparkleOutTime).SetEase(Ease.InQuad));
             }
-            enter.InsertCallback(EnterTime + HoldTime, PlayExit);
+            enter.InsertCallback(EnterTime + (warning ? WarningHoldTime : HoldTime), PlayExit);
+            enterSequence = enter;
+            skippable = warning;
+        }
+
+        private void Update()
+        {
+            if (!skippable || GamePause.IsPaused)
+                return;
+            Pointer pointer = Pointer.current;
+            if (pointer != null && pointer.press.wasPressedThisFrame)
+                SkipWarning();
+        }
+
+        // 경고 배너를 누르면 머무는 시간을 건너뛰고 바로 사라지기 시작해.
+        // 사라지는 연출(짧게)은 그대로 보여 줘서, 누른 손가락이 바로 조준으로 이어지지 않아.
+        private void SkipWarning()
+        {
+            Sequence enter = enterSequence;
+            enterSequence = null;
+            skippable = false;
+            if (enter == null || !enter.IsActive())
+                return;
+            // 나타나는 연출을 끝 상태로 맞추고(흔들림, 번쩍임 포함) 사라지기로 넘어가. 안의 콜백은 부르지 않아.
+            enter.Complete(false);
+            if (enter.IsActive())
+                enter.Kill();
+            PlayExit();
         }
 
         private void PlayExit()
         {
+            skippable = false;
+            enterSequence = null;
             if (current.Kind == TurnEventKind.Debuff)
                 ExitWarning();
             else if (current.Kind == TurnEventKind.Gold)
@@ -346,7 +382,7 @@ namespace ElementalBreaker
                 FlyCoins(RefundCoins, current.Gold);
         }
 
-        // 경고 배너가 사라지면 상단 왼쪽 표시가 남아. 체력 2배 턴이면 이때 새 줄에 "×2"가 떠.
+        // 경고 배너가 사라지면 상단 왼쪽 표시가 남아. 체력 디버프 턴이면 이때 새 줄에 "×2"가 떠.
         private void ExitWarning()
         {
             Debuff debuff = current.Debuff;
@@ -357,10 +393,18 @@ namespace ElementalBreaker
             {
                 applyEvent?.Invoke();
                 ShowChip(debuff);
-                if (debuff == Debuff.DoubleHealth)
+                if (debuff == Debuff.HealthBoost)
                     board.RevealBoostedRow();
             });
             exit.InsertCallback(ExitTime + ChipPopTime, Finish);
+        }
+
+        // 이어하기로 디버프 턴 중간에 들어왔을 때야. 경고 배너 없이 상단 왼쪽 표시만 바로 띄워.
+        public void ShowActiveDebuff()
+        {
+            Debuff debuff = board != null ? board.TurnEvents.ActiveDebuff : Debuff.None;
+            if (debuff != Debuff.None)
+                ShowChip(debuff);
         }
 
         private void ShowChip(Debuff debuff)
@@ -611,6 +655,8 @@ namespace ElementalBreaker
 
         private void OnDisable()
         {
+            skippable = false;
+            enterSequence = null;
             DOTween.Kill(this);
             DOTween.Kill(gain);
             if (burst != null)

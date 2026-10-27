@@ -17,10 +17,10 @@ namespace ElementalBreaker
         private const string FrostName = "Frost Film";
         private const string BoostRimName = "Boost Rim";
         private const string BoostLabelName = "Boost Label";
-        // 체력 2배 벽돌은 깨질 때까지 붉은 테두리가 남아. 벽돌보다 이만큼 크게 뒤에 깔아서 가장자리만 보여.
+        // 체력 디버프 벽돌은 깨질 때까지 붉은 테두리가 남아. 벽돌보다 이만큼 크게 뒤에 깔아서 가장자리만 보여.
         private const float BoostRimPadding = 0.035f;
         private static readonly Color BoostRimColor = new Color32(0xFF, 0x3B, 0x4E, 0xFF);
-        // 체력 2배 줄이 처음 보일 때 벽돌이 번쩍이고, 위에 "×2"가 톡 커지며 떠올랐다가 사라져.
+        // 체력 디버프 줄이 처음 보일 때 벽돌이 번쩍이고, 위에 "×2"가 톡 커지며 떠올랐다가 사라져.
         private const float BoostFlash = 0.6f;
         private const float BoostPopTime = 0.9f;
         private const float BoostPopRise = 0.18f;
@@ -158,7 +158,7 @@ namespace ElementalBreaker
                 frost.enabled = false;
         }
 
-        // 체력 2배 디버프로 생긴 벽돌이야. 붉은 테두리를 켜고 끄고, 풀에서 다시 나올 때는 꺼.
+        // 체력 디버프로 생긴 벽돌이야. 붉은 테두리를 켜고 끄고, 풀에서 다시 나올 때는 꺼.
         public void SetBoosted(bool boosted)
         {
             if (!boosted)
@@ -187,7 +187,7 @@ namespace ElementalBreaker
             boostRim.enabled = true;
         }
 
-        // 체력 2배 줄이 처음 보일 때야. 실제 시간으로 움직여.
+        // 체력 디버프 줄이 처음 보일 때야. 실제 시간으로 움직여.
         public void PlayBoostPop()
         {
             if (destroyed || healthLabel == null)
@@ -209,13 +209,14 @@ namespace ElementalBreaker
                 boostLabel.fontSize = BoostLabelSize;
                 boostLabel.alignment = TextAlignmentOptions.Center;
                 boostLabel.color = BoostTextColor;
-                boostLabel.text = "×2";
                 if (boostLabel.TryGetComponent(out Renderer labelRenderer))
                 {
                     labelRenderer.sortingLayerID = visual.sortingLayerID;
                     labelRenderer.sortingOrder = visual.sortingOrder + 5;
                 }
             }
+            // 배율은 턴 이벤트 설정을 따라("×2").
+            boostLabel.text = "×" + (board != null ? board.TurnEvents.HealthBoostText : "2");
             DOTween.Kill(boostLabel);
             Transform label = boostLabel.transform;
             Vector3 start = new Vector3(baseSize.x * 0.25f, baseSize.y * 0.5f + 0.1f, 0f);

@@ -27,15 +27,19 @@ namespace ElementalBreaker
         [SerializeField, Range(0, 6)] private int maxBricksPerRow = 6;
         [Tooltip("한 줄에 적어도 이만큼은 벽돌이 나와.")]
         [SerializeField, Min(0)] private int minBricksPerRow = 2;
-        [Tooltip("칸마다 벽돌이 나올 확률이야. lateSpawnTurn 턴까지는 early, 그 뒤로는 late 확률을 써.")]
-        [SerializeField, Range(0f, 1f)] private float earlySpawnProbability = 0.55f;
+        [Tooltip("칸마다 벽돌이 나올 확률이야. 1~lateSpawnTurn턴은 early, 그다음 finalSpawnTurn턴까지 late, 그 뒤로는 final 확률을 써.")]
+        [SerializeField, Range(0f, 1f)] private float earlySpawnProbability = 0.6f;
         [SerializeField, Range(0f, 1f)] private float lateSpawnProbability = 0.7f;
+        [SerializeField, Range(0f, 1f)] private float finalSpawnProbability = 0.8f;
         [SerializeField, Min(1)] private int lateSpawnTurn = 20;
+        [SerializeField, Min(1)] private int finalSpawnTurn = 29;
         [Tooltip("새 줄 벽돌 체력 = 턴 × 이 값이야. 1이면 1턴 1, 10턴 10.")]
         [SerializeField, Min(1)] private int healthPerTurn = 1;
         [Header("시작")]
         [Tooltip("게임을 시작할 때 가진 골드야.")]
-        [SerializeField, Min(0)] private int startingGold = 300;
+        [SerializeField, Min(0)] private int startingGold = 200;
+        [Tooltip("벽돌을 깨면 받는 골드(턴 ÷ 10, 최소 1)에 이 턴마다 1골드씩 더 얹어. 40이면 40턴 5골드, 80턴 10골드, 120턴 15골드야. 0이면 없어.")]
+        [SerializeField, Min(0)] private int breakGoldBonusInterval = 40;
         [SerializeField, Min(0f)] private float descentDuration = 0.25f;
         [Header("아이템: 속성 폭탄")]
         [Tooltip("맨 앞 공 칸에서 몇 칸까지 맞는지야. 1이면 3x3.")]
@@ -94,14 +98,24 @@ namespace ElementalBreaker
         private BombItem bomb;
         private TurnEvents turnEvents;
         private BoundaryCollapse collapse;
+        // 이어하기로 받은 판이야. Start에서 놓고 비워.
+        private SaveData resume;
+        // 상점의 벽돌 속성 변경을 마지막으로 산 턴이야. 한 턴에 한 번만 살 수 있어.
+        private int brickChangeTurn = -1;
+
+        public bool BrickChangeUsedThisTurn => brickChangeTurn == TurnNumber;
+        public void MarkBrickChangeUsed() => brickChangeTurn = TurnNumber;
 
         // 벽돌 하나를 깨면 받는 골드가 이 턴마다 1씩 올라. 1~19턴 1골드, 20~29턴 2골드, 30~39턴 3골드야.
         private const int BreakGoldTurnStep = 10;
 
-        // 벽돌 하나를 깨면 (턴 ÷ 10, 최소 1)골드, 유리한 상성으로 깨면 그 2배야.
+        // 벽돌 하나를 깨면 (턴 ÷ 10, 최소 1)골드에 40턴마다 1골드씩 더 줘.
+        // 39턴 3골드, 40턴 5골드, 80턴 10골드, 120턴 15골드야. 유리한 상성으로 깨면 그 2배야.
         public void AwardBreak(bool advantage)
         {
             int gold = Mathf.Max(1, TurnNumber / BreakGoldTurnStep);
+            if (breakGoldBonusInterval > 0)
+                gold += TurnNumber / breakGoldBonusInterval;
             Gold.Add(advantage ? gold * 2 : gold);
         }
 
@@ -112,12 +126,36 @@ namespace ElementalBreaker
         {
             if (launcher != null)
                 launcher.SetInputBlocked(true);
+            TakePendingSave();
+        }
+
+        // 로비에서 이어하기를 눌렀으면 저장된 판을 받아. 이 게임판에 그대로 놓을 수 있을 때만 쓰고, 아니면 버리고 새 게임으로 시작해.
+        // 발사기는 Start에서 공을 만들어서, 그 전(Awake)에 공 수와 속성을 넘겨.
+        private void TakePendingSave()
+        {
+            SaveData data = GameSave.Pending;
+            GameSave.Pending = null;
+            if (data == null || launcher == null)
+                return;
+            ClampSettings();
+            if (!GameSave.FitsBoard(data, rows, columns, dangerRow))
+            {
+                Debug.LogWarning("저장된 판이 지금 게임판과 맞지 않아서 새 게임으로 시작해.", this);
+                GameSave.Delete();
+                return;
+            }
+            Rect rect = BoardRect;
+            data.launchX = Mathf.Clamp(data.launchX, rect.xMin, rect.xMax);
+            launcher.Restore(data.balls, (ElementType)data.turnElement,
+                data.reservedElement >= 0 ? (ElementType?)data.reservedElement : null, data.launchX);
+            resume = data;
         }
 
         private void OnEnable()
         {
             if (launcher != null)
             {
+                launcher.Launched += OnLaunched;
                 launcher.TurnEnded += OnTurnEnded;
                 launcher.SetInputBlocked(!initialized || IsProcessing || IsGameOver);
                 if (initialized)
@@ -193,7 +231,15 @@ namespace ElementalBreaker
                     pickupPool.Push(pickup);
                 }
             }
+            if (resume != null)
+            {
+                SaveData data = resume;
+                resume = null;
+                Resume(data);
+                return;
+            }
             TurnNumber = TurnEvents.StartTurn;
+            TurnEvents.Seed = UnityEngine.Random.Range(1, int.MaxValue);
             Gold.Add(startingGold);
             TurnEvents.SkipTo(TurnNumber);
             initialized = true;
@@ -315,8 +361,154 @@ namespace ElementalBreaker
                     break;
             }
             if (used)
+            {
                 Items.Take();
+                // 써 보고 나갔다 들어와서 되돌리지 못하게 바로 저장해.
+                Commit(launcher.IsTurnActive ? SavePhase.ShotFired : SavePhase.Aiming);
+            }
             return used;
+        }
+
+        // 조준 중에 상점에서 사거나 공 속성을 바꾼 뒤 불러. 되돌릴 수 없게 바로 저장해.
+        public void SaveProgress()
+        {
+            if (launcher != null && launcher.CanPrepare)
+                Commit(SavePhase.Aiming);
+        }
+
+        // 손을 떼서 쏜 순간이야. 이어하면 이 샷은 아무것도 못 맞힌 걸로 쳐서, 잘못 쏘고 나가도 다시 쏠 수 없어.
+        private void OnLaunched() => Commit(SavePhase.ShotFired);
+
+        private void Commit(SavePhase phase)
+        {
+            if (!initialized || IsGameOver)
+                return;
+            GameSave.Write(Capture(phase));
+        }
+
+        // 지금 판을 저장 형식으로 옮겨. 속성 물결이 지나가는 중이면 물결이 끝난 뒤의 속성으로 적어.
+        private SaveData Capture(SavePhase phase)
+        {
+            bool waving = ElementWave != null && ElementWave.IsPlaying;
+            List<SavedBrick> savedBricks = new List<SavedBrick>();
+            List<SavedPickup> savedPickups = new List<SavedPickup>();
+            for (int row = 0; row < rows; row++)
+            for (int column = 0; column < columns; column++)
+            {
+                Brick brick = cells[row, column];
+                if (brick != null)
+                    savedBricks.Add(new SavedBrick
+                    {
+                        row = row,
+                        column = column,
+                        element = (int)(waving ? ElementWave.Target : brick.Element),
+                        health = brick.Health,
+                        boosted = brick.IsBoosted
+                    });
+                BoardPickup pickup = pickups[row, column];
+                if (pickup != null)
+                    savedPickups.Add(new SavedPickup { row = row, column = column, element = (int)pickup.Element });
+            }
+            ElementType? reserved = launcher.ReservedElement;
+            return new SaveData
+            {
+                phase = (int)phase,
+                turn = TurnNumber,
+                gold = Gold.Amount,
+                balls = launcher.BallCount,
+                turnElement = (int)launcher.TurnElement,
+                reservedElement = reserved.HasValue ? (int)reserved.Value : -1,
+                launchX = launcher.LaunchPosition.x,
+                heldItem = (int)Items.Held,
+                iceUseCount = IceUseCount,
+                frozen = IsFrozen,
+                pendingHealthBoost = TurnEvents.PendingHealthBoost,
+                debuffSeed = TurnEvents.Seed,
+                brickChangeUsed = BrickChangeUsedThisTurn,
+                bricks = savedBricks.ToArray(),
+                pickups = savedPickups.ToArray()
+            };
+        }
+
+        // 이어하기: 저장된 판을 그대로 놓고, 저장한 순간에 따라 이어 가.
+        private void Resume(SaveData data)
+        {
+            TurnNumber = data.turn;
+            Gold.Add(data.gold);
+            IceUseCount = data.iceUseCount;
+            if (data.brickChangeUsed)
+                brickChangeTurn = data.turn;
+            Items.TryGive((ItemType)data.heldItem);
+            foreach (SavedBrick saved in data.bricks ?? Array.Empty<SavedBrick>())
+            {
+                Brick brick = pool.Pop();
+                cells[saved.row, saved.column] = brick;
+                brick.Spawn(this, saved.row, saved.column, saved.health, brickSize, (ElementType)saved.element);
+                if (saved.boosted)
+                    brick.SetBoosted(true);
+            }
+            foreach (SavedPickup saved in data.pickups ?? Array.Empty<SavedPickup>())
+                SpawnPickup(saved.row, saved.column, (ElementType)saved.element);
+            SavePhase phase = (SavePhase)data.phase;
+            IsFrozen = data.frozen;
+            TurnEvents.Seed = data.debuffSeed;
+            TurnEvents.Restore(TurnNumber, phase != SavePhase.TurnStart, data.pendingHealthBoost);
+            initialized = true;
+            lastProcessedTurn = launcher.CompletedTurnCount;
+            CheckResumed(data, phase);
+            switch (phase)
+            {
+                case SavePhase.TurnStart:
+                    // 이번 턴 이벤트를 아직 못 봤어. 새 줄은 이미 있으니 이벤트만 보여 주고 조작을 열어.
+                    TurnEvents.Play(OpenTurn);
+                    break;
+                case SavePhase.Aiming:
+                    ShowResumedState();
+                    OpenTurn();
+                    break;
+                default:
+                    // 쏜 샷은 아무것도 못 맞힌 걸로 치고 바로 턴을 끝내. 나가는 게 끝까지 보는 것보다 늘 손해야.
+                    ShowResumedState();
+                    EndTurn();
+                    break;
+            }
+        }
+
+        // 저장 → 불러오기 → 다시 저장이 같은지 확인해. 다르면 저장에 빠진 항목이 있다는 뜻이라 콘솔에 남겨.
+        private void CheckResumed(SaveData data, SavePhase phase)
+        {
+            SaveData restored = Capture(phase);
+            restored.version = data.version;
+            // 발사기가 보드보다 먼저 시작했으면 다음 턴 속성을 이번 턴 속성으로 벌써 옮겼을 수 있어. 결과가 같아서 맞춰 비교해.
+            if (data.reservedElement >= 0 && restored.reservedElement < 0 && restored.turnElement == data.reservedElement)
+            {
+                restored.reservedElement = data.reservedElement;
+                restored.turnElement = data.turnElement;
+            }
+            string expected = JsonUtility.ToJson(data), actual = JsonUtility.ToJson(restored);
+            if (expected != actual)
+                Debug.LogWarning("이어하기 검사: 저장한 판과 불러온 판이 달라.\n저장: " + expected + "\n불러옴: " + actual, this);
+        }
+
+        // 조준 중이나 쏜 뒤에 이어하면 이벤트 배너는 다시 안 보여 줘서, 얼음과 디버프 표시만 바로 다시 띄워.
+        private void ShowResumedState()
+        {
+            if (IsFrozen && Ice != null)
+                Ice.PlayFreeze(launcher.LaunchPosition);
+            TurnEventBanner banner = FindFirstObjectByType<TurnEventBanner>();
+            if (banner != null)
+                banner.ShowActiveDebuff();
+        }
+
+        // 에디터 메뉴 "저장 검사"가 불러. 지금 판을 저장 형식으로 바꿨다가 다시 읽어도 같은지, 이 판에 다시 놓을 수 있는지 봐.
+        public bool VerifySave(out string json)
+        {
+            json = null;
+            if (!initialized)
+                return false;
+            SaveData data = Capture(launcher.IsTurnActive ? SavePhase.ShotFired : SavePhase.Aiming);
+            data.version = GameSave.Version;
+            return GameSave.RoundTrips(data, out json) && GameSave.FitsBoard(data, rows, columns, dangerRow);
         }
 
         public Vector3 GetCellCenter(int row, int column)
@@ -333,6 +525,14 @@ namespace ElementalBreaker
                 return;
 
             lastProcessedTurn = launcher.CompletedTurnCount;
+            // 공이 다 돌아와서 이 샷 결과가 확정됐어. 벽돌이 내려오는 동안 나가도 결과가 남게 바로 저장해.
+            Commit(SavePhase.ShotFired);
+            EndTurn();
+        }
+
+        // 이번 턴을 끝내. 공이 다 돌아왔을 때와, 쏜 뒤에 나갔다가 이어할 때 불러.
+        private void EndTurn()
+        {
             launcher.SetInputBlocked(true);
             IsProcessing = true;
             // 얼음을 쓴 턴이면 내려오지 않아. 서리가 빛나고 가루로 풀리는 연출이 끝나면 다음 턴으로 넘어가.
@@ -407,13 +607,18 @@ namespace ElementalBreaker
             TurnEvents.Prepare(TurnNumber);
             if (spawnRow)
                 SpawnTopRow(true);
+            // 새 줄을 보고 나갔다 들어와도 같은 줄이 나오게, 이벤트를 보여 주기 전에 바로 저장해.
+            Commit(SavePhase.TurnStart);
             TurnEvents.Play(OpenTurn);
         }
 
         private void OpenTurn()
         {
-            if (!IsGameOver)
-                launcher.SetInputBlocked(false);
+            if (IsGameOver)
+                return;
+            launcher.SetInputBlocked(false);
+            // 해금 아이템과 골드 보상을 받고, 먹은 공 속성이 이번 턴 속성이 된 조준 상태야.
+            Commit(SavePhase.Aiming);
         }
 
         private void AdvanceDescent(float deltaTime)
@@ -461,6 +666,8 @@ namespace ElementalBreaker
                 // 벽돌이 기준선에 닿는 순간 둔탁한 "쿵"과 함께 위아래 경계선이 무너지고,
                 // 다 무너진 뒤(BoundaryCollapse.Duration) GameOverUI가 다시 하기 창을 띄워.
                 IsGameOver = true;
+                // 무너지는 연출 중에 나가도 진 판이 이어하기로 살아나지 않게, 지는 순간 저장을 지워.
+                GameSave.Delete();
                 GameAudio.Play(SoundCue.GameOverThud);
                 if (collapse != null)
                     collapse.Play();
@@ -483,7 +690,7 @@ namespace ElementalBreaker
         }
 
         // 맨 위에 새 줄을 만들어. withPickup이면 무작위 한 칸을 공 +1 아이템 자리로 먼저 비워 두고,
-        // 나머지 칸마다 확률(20턴까지 55%, 그 뒤 70%)로 벽돌을 놓아. 그래도 적으면 빈 칸을 채워 최소 개수를 맞춰.
+        // 나머지 칸마다 확률(1~20턴 60%, 21~29턴 70%, 30턴부터 80%)로 벽돌을 놓아. 그래도 적으면 빈 칸을 채워 최소 개수를 맞춰.
         private void SpawnTopRow(bool withPickup)
         {
             // 열 순서를 섞어서 왼쪽에만 몰리지 않게 해. 맨 앞 칸이 공 아이템 자리야.
@@ -498,13 +705,14 @@ namespace ElementalBreaker
             int first = pickupColumn >= 0 ? 1 : 0;
             int limit = Mathf.Min(maxBricksPerRow, columns - first);
             int minimum = Mathf.Min(minBricksPerRow, limit);
-            float probability = TurnNumber > lateSpawnTurn ? lateSpawnProbability : earlySpawnProbability;
+            float probability = TurnNumber > finalSpawnTurn ? finalSpawnProbability
+                : TurnNumber > lateSpawnTurn ? lateSpawnProbability : earlySpawnProbability;
             int spawned = 0;
             long baseRowHealth = Math.Max(1L, (long)TurnNumber * healthPerTurn);
-            // 체력 2배 디버프는 그 뒤 처음 생기는 줄에 한 번 들어가. 그 벽돌들은 깨질 때까지 붉은 테두리가 남아.
-            bool boosted = TurnEvents.TakeDoubleHealth();
+            // 체력 디버프(기본 2배, 소수점은 올림)는 그 뒤 처음 생기는 줄에 한 번 들어가. 그 벽돌들은 깨질 때까지 붉은 테두리가 남아.
+            bool boosted = TurnEvents.TakeHealthBoost();
             if (boosted)
-                baseRowHealth *= 2;
+                baseRowHealth = (long)Math.Ceiling(baseRowHealth * (double)TurnEvents.HealthBoostMultiplier);
             int health = (int)Math.Min(int.MaxValue, baseRowHealth);
             for (int i = first; i < columns && spawned < limit; i++)
                 if (UnityEngine.Random.value < probability)
@@ -513,13 +721,13 @@ namespace ElementalBreaker
                 if (cells[0, columnOrder[i]] == null)
                     SpawnBrick(columnOrder[i], health, boosted, ref spawned);
             if (pickupColumn >= 0)
-                SpawnPickup(pickupColumn);
-            // 체력 2배 턴에는 경고 배너가 사라질 때 "×2"를 보여 줘. 얼음 때문에 다음 턴으로 미뤄진 줄은 생기자마자 보여 줘.
-            if (boosted && TurnEvents.ActiveDebuff != Debuff.DoubleHealth)
+                SpawnPickup(0, pickupColumn, ElementRules.RandomElement());
+            // 체력 디버프 턴에는 경고 배너가 사라질 때 "×2"를 보여 줘. 얼음 때문에 다음 턴으로 미뤄진 줄은 생기자마자 보여 줘.
+            if (boosted && TurnEvents.ActiveDebuff != Debuff.HealthBoost)
                 RevealBoostedRow();
         }
 
-        // 맨 윗줄의 체력 2배 벽돌이 번쩍이고 "×2"가 떠.
+        // 맨 윗줄의 체력 디버프 벽돌이 번쩍이고 "×2"가 떠.
         public void RevealBoostedRow()
         {
             for (int column = 0; column < columns; column++)
@@ -540,14 +748,13 @@ namespace ElementalBreaker
             spawned++;
         }
 
-        private void SpawnPickup(int column)
+        private void SpawnPickup(int row, int column, ElementType element)
         {
-            if (cells[0, column] != null || pickups[0, column] != null)
+            if (cells[row, column] != null || pickups[row, column] != null || pickupPool.Count == 0)
                 return;
             BoardPickup pickup = pickupPool.Pop();
-            pickups[0, column] = pickup;
-            pickup.Spawn(this, 0, column, Mathf.Min(cellSize.x, cellSize.y) * pickupSizeRatio,
-                ElementRules.RandomElement());
+            pickups[row, column] = pickup;
+            pickup.Spawn(this, row, column, Mathf.Min(cellSize.x, cellSize.y) * pickupSizeRatio, element);
         }
 
         public void Collect(BoardPickup pickup)
@@ -594,7 +801,9 @@ namespace ElementalBreaker
             minBricksPerRow = Mathf.Clamp(minBricksPerRow, 0, maxBricksPerRow);
             earlySpawnProbability = Mathf.Clamp01(earlySpawnProbability);
             lateSpawnProbability = Mathf.Clamp01(lateSpawnProbability);
+            finalSpawnProbability = Mathf.Clamp01(finalSpawnProbability);
             lateSpawnTurn = Mathf.Max(1, lateSpawnTurn);
+            finalSpawnTurn = Mathf.Max(lateSpawnTurn, finalSpawnTurn);
             pickupSizeRatio = Mathf.Clamp(pickupSizeRatio, 0.1f, 0.9f);
             healthPerTurn = Mathf.Max(1, healthPerTurn);
             descentDuration = Mathf.Max(0f, descentDuration);
@@ -637,6 +846,7 @@ namespace ElementalBreaker
         {
             if (launcher == null)
                 return;
+            launcher.Launched -= OnLaunched;
             launcher.TurnEnded -= OnTurnEnded;
             launcher.SetInputBlocked(true);
         }

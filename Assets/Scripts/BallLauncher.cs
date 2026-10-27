@@ -64,6 +64,8 @@ namespace ElementalBreaker
         private float launchCountdown;
         private bool hasReturnPosition;
         private int acquiredBallCount;
+        // 이어하기로 시작할 때의 공 수야. 0이면 처음 시작 공 수를 써.
+        private int restoredBallCount;
         private bool launchHalf;
         private bool needsTurnPreparation = true;
         public ElementType TurnElement { get; private set; }
@@ -80,7 +82,9 @@ namespace ElementalBreaker
         public bool IsTurnActive { get; private set; }
         public int PendingBallCount { get; private set; }
         public int FlyingBallCount => flyingBalls.Count;
-        public int BallCount => balls.Count + acquiredBallCount;
+        // 공은 Start에서 만들어서, 그 전에는 만들 공 수를 알려 줘. 첫 턴 저장이 Start보다 먼저 올 수 있어.
+        public int BallCount => (ready ? balls.Count : InitialBallCount) + acquiredBallCount;
+        private int InitialBallCount => restoredBallCount > 0 ? restoredBallCount : Mathf.Max(1, startingBallCount);
         // 지금 가진 공 수야. 이번 턴에 얻은 공은 이번 턴에는 안 나가서 따로 세고, 턴이 끝나면 여기에 더해져.
         public int ActiveBallCount => balls.Count;
         public int AcquiredBallCount => acquiredBallCount;
@@ -107,6 +111,21 @@ namespace ElementalBreaker
         public int CompletedTurnCount { get; private set; }
         public bool IsInputBlocked { get; private set; }
         public event Action TurnEnded;
+        // 손을 떼서 쏜 순간이야. 첫 공이 움직이기 전에 불러서 보드가 "이번 턴은 쐈음"으로 바로 저장해.
+        public event Action Launched;
+
+        // 이어하기: 저장된 공 수, 이번 턴과 다음 턴 공 속성, 발사 자리로 시작해. 씬이 열릴 때 Start보다 먼저 불러야 해.
+        public void Restore(int ballCount, ElementType turnElement, ElementType? reservedElement, float launchX)
+        {
+            restoredBallCount = Mathf.Max(1, ballCount);
+            TurnElement = turnElement;
+            ReservedElement = reservedElement;
+            if (launchPoint == null)
+                return;
+            Vector3 position = launchPoint.position;
+            position.x = launchX;
+            launchPoint.position = position;
+        }
 
         // 발사 전이라 상점이나 공 속성 선택을 쓸 수 있는 상태야.
         public bool CanPrepare => ready && !IsTurnActive && !IsInputBlocked;
@@ -255,7 +274,8 @@ namespace ElementalBreaker
                 Debug.LogWarning("Ball 레이어가 없어서 공끼리 충돌을 발사할 때마다 하나씩 꺼. Tags and Layers에 Ball 레이어를 추가해.", this);
             // 최초 한 번만 생성하고 이후 턴에는 같은 공들을 재사용해.
             bool hasSceneBall = ball.gameObject.scene.IsValid();
-            for (int i = 0; i < Mathf.Max(1, startingBallCount); i++)
+            int initialBallCount = InitialBallCount;
+            for (int i = 0; i < initialBallCount; i++)
             {
                 // 프리팹 원본에는 접근하지 않고 생성된 공만 준비해.
                 Ball pooledBall = i == 0 && hasSceneBall ? ball : CreateBall();
@@ -360,6 +380,7 @@ namespace ElementalBreaker
             frontBallIndex = 0;
             PendingBallCount = LaunchCount;
             launchCountdown = 0f;
+            Launched?.Invoke();
             AssignTrails();
             LaunchNextBall();
         }

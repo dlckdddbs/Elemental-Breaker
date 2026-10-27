@@ -79,6 +79,10 @@ namespace ElementalBreaker
             Hide();
         }
 
+        // 물결이 지나가는 중이야. 끝나면 모든 벽돌이 Target 속성이 돼서, 그사이 저장할 때는 Target으로 적어.
+        public bool IsPlaying => startTime >= 0f;
+        public ElementType Target => target;
+
         public void Play(Vector2 from, ElementType element)
         {
             // 앞 물결이 아직 지나가는 중이면 그 속성으로 마저 바꾸고 새로 시작해.

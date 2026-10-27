@@ -24,6 +24,11 @@ namespace ElementalBreaker.Editor
         private static readonly Vector4 FrostFrameBorder = new Vector4(100f, 100f, 100f, 100f);
         // 턴 보상 배너 바탕(871x272, 기준 화면의 2배)이야. 둥근 모서리(반지름 약 69px)와 테두리는 고정하고 가운데만 늘려서 배너 비율이 달라도 모서리가 안 찌그러져.
         private static readonly Vector4 RewardBannerBorder = new Vector4(75f, 75f, 75f, 75f);
+        // 로비 버튼 바탕과 테두리(120x120, 반지름 40px)야. 둥근 모서리만 고정하고 가운데를 늘려.
+        private static readonly Vector4 ButtonBorder = new Vector4(40f, 40f, 40f, 40f);
+        // 결과 카드(776x744)야. 로비 확인 창처럼 다른 비율로 늘려도 둥근 모서리(반지름 약 40px)가 안 찌그러지게 해.
+        // 게임 오버 카드는 Simple로 그려서 이 테두리와 상관없어.
+        private static readonly Vector4 ResultCardBorder = new Vector4(44f, 44f, 44f, 44f);
         // 오라 이미지(288x160)에서 공 중심이 있는 위치야. 공과 같은 점을 기준으로 회전해.
         private static readonly Vector2 AuraPivot = new Vector2(208f / 288f, 0.5f);
 
@@ -60,14 +65,16 @@ namespace ElementalBreaker.Editor
             bool isRewardBanner = assetPath.EndsWith("/ui_reward_banner.png") || assetPath.EndsWith("/ui_debuff_banner.png");
             // 벽돌 서리막은 셰이더가 이미지 칸 안의 위치로 퍼지는 순서를 계산해서, 잘리지 않은 사각형 메시가 필요해.
             bool isFrostFilm = assetPath.EndsWith("/fx_frost_film.png");
+            bool isButton = assetPath.EndsWith("/ui_button_fill.png") || assetPath.EndsWith("/ui_button_line.png");
+            bool isResultCard = assetPath.EndsWith("/ui_result_card.png");
             importer.spriteBorder = isBrick ? BrickBorder : isPill ? PillBorder : isPanel ? PanelBorder : isFrame ? FrameBorder
                 : isTopBand ? TopBandBorder : isChip ? ChipBorder : isFrostFrame ? FrostFrameBorder
-                : isRewardBanner ? RewardBannerBorder : Vector4.zero;
+                : isRewardBanner ? RewardBannerBorder : isButton ? ButtonBorder : isResultCard ? ResultCardBorder : Vector4.zero;
             TextureImporterSettings settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);
             // 9-slice는 Full Rect 메시여야 가운데가 제대로 늘어나.
             settings.spriteMeshType = isBrick || isPill || isPanel || isFrame || isTopBand || isChip || isFrostFrame || isFrostFilm ||
-                isRewardBanner ? SpriteMeshType.FullRect : SpriteMeshType.Tight;
+                isRewardBanner || isButton || isResultCard ? SpriteMeshType.FullRect : SpriteMeshType.Tight;
             settings.spriteAlignment = isAura ? (int)SpriteAlignment.Custom : (int)SpriteAlignment.Center;
             settings.spritePivot = isAura ? AuraPivot : new Vector2(0.5f, 0.5f);
             importer.SetTextureSettings(settings);

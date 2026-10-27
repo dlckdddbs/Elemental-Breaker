@@ -45,9 +45,9 @@ namespace ElementalBreaker
         [Header("가격 (10턴마다 오르는 값은 1~9턴 0번, 10~19턴 1번, 20~29턴 2번 더해)")]
         [SerializeField, Min(0)] private int bombBasePrice = 60;
         [SerializeField, Min(0)] private int bombPricePerTenTurns = 10;
-        [Tooltip("얼음은 이번 판에 쓸 때마다 가격이 2배가 돼(100 → 200 → 400).")]
-        [SerializeField, Min(0)] private int iceBasePrice = 100;
-        [SerializeField, Min(0)] private int brickChangeBasePrice = 50;
+        [Tooltip("얼음은 이번 판에 쓸 때마다 가격이 2배가 돼(150 → 300 → 600).")]
+        [SerializeField, Min(0)] private int iceBasePrice = 150;
+        [SerializeField, Min(0)] private int brickChangeBasePrice = 75;
         [SerializeField, Min(0)] private int brickChangePricePerTenTurns = 10;
         [Header("상점 버튼")]
         [Tooltip("버튼과 라벨을 묶은 칸이야. 발사 중에는 칸째 흐리게 해.")]
@@ -63,7 +63,6 @@ namespace ElementalBreaker
         [SerializeField] private Card iceCard;
         [SerializeField] private Card brickChangeCard;
 
-        private int brickChangeUsedTurn = -1;
         private bool dirty = true;
         private int shownCanPrepare = -1;
         private ElementType shownElement;
@@ -192,19 +191,21 @@ namespace ElementalBreaker
             board.Items.TryGive(item);
             GameAudio.Play(SoundCue.Purchase);
             dirty = true;
+            board.SaveProgress();
         }
 
         private void BuyBrickChange()
         {
             ElementType element = launcher.TurnElement;
             if (!CanShop() || !IsUnlocked(ShopItem.BrickChange) || element == ElementType.Normal ||
-                brickChangeUsedTurn == board.TurnNumber || !board.Gold.TrySpend(BrickChangePrice))
+                board.BrickChangeUsedThisTurn || !board.Gold.TrySpend(BrickChangePrice))
             {
                 GameAudio.Play(SoundCue.Denied);
                 return;
             }
             board.ChangeAllBrickElements(ElementRules.WeakTo(element));
-            brickChangeUsedTurn = board.TurnNumber;
+            board.MarkBrickChangeUsed();
+            board.SaveProgress();
             // 바로 적용 아이템은 상점을 닫아서 벽돌이 바뀌는 모습이 가려지지 않게 해.
             CloseSilently();
         }
@@ -311,7 +312,7 @@ namespace ElementalBreaker
                     brickChangeCard.iconBadge.sprite = ElementRules.GetIconSprite(target);
             }
             string reason = LockedReason(ShopItem.BrickChange) ?? (element == ElementType.Normal ? "먼저 공 속성을 골라 주세요"
-                : brickChangeUsedTurn == board.TurnNumber ? "이번 턴에 이미 썼어요"
+                : board.BrickChangeUsedThisTurn ? "이번 턴에 이미 썼어요"
                 : gold < BrickChangePrice ? "골드가 부족해요" : null);
             SetCard(brickChangeCard, BrickChangePrice, reason, "모든 벽돌을 " + ElementName(target) + " 속성으로");
         }

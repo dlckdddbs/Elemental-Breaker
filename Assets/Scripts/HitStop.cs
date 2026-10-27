@@ -22,7 +22,8 @@ namespace ElementalBreaker
 
         private void Update()
         {
-            if (!active)
+            // 일시 정지 중에는 남은 시간을 세지 않아. 풀리면 이어서 세고 원래 속도로 돌아가.
+            if (!active || GamePause.IsPaused)
                 return;
             remaining -= Time.unscaledDeltaTime;
             if (remaining <= 0f)
@@ -33,7 +34,8 @@ namespace ElementalBreaker
         {
             active = false;
             remaining = 0f;
-            Time.timeScale = restoreScale;
+            if (!GamePause.IsPaused)
+                Time.timeScale = restoreScale;
         }
 
         private void OnDisable()
